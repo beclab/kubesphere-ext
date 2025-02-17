@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package apis
 
 import monitoringdashboardv1alpha1 "kubesphere.io/monitoring-dashboard/api/v1alpha1"

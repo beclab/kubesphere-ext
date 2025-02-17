@@ -19,24 +19,13 @@
 package v1alpha3
 
 import (
-	"context"
 	"errors"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
-	converter "kubesphere.io/monitoring-dashboard/tools/converter"
-
-	"kubesphere.io/kubesphere/pkg/models/openpitrix"
-
 	"github.com/emicklei/go-restful"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	monitoringdashboardv1alpha2 "kubesphere.io/monitoring-dashboard/api/v1alpha2"
 
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/informers"
@@ -49,12 +38,11 @@ import (
 type handler struct {
 	k               kubernetes.Interface
 	mo              model.MonitoringOperator
-	opRelease       openpitrix.ReleaseInterface
 	meteringOptions *meteringclient.Options
 	rtClient        runtimeclient.Client
 }
 
-func NewHandler(k kubernetes.Interface, monitoringClient monitoring.Interface, metricsClient monitoring.Interface, f informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter, meteringOptions *meteringclient.Options, opClient openpitrix.Interface, rtClient runtimeclient.Client) *handler {
+func NewHandler(k kubernetes.Interface, monitoringClient monitoring.Interface, metricsClient monitoring.Interface, f informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter, meteringOptions *meteringclient.Options, rtClient runtimeclient.Client) *handler {
 
 	if meteringOptions == nil || meteringOptions.RetentionDay == "" {
 		meteringOptions = &meteringclient.DefaultMeteringOption
@@ -62,16 +50,10 @@ func NewHandler(k kubernetes.Interface, monitoringClient monitoring.Interface, m
 
 	return &handler{
 		k:               k,
-		mo:              model.NewMonitoringOperator(monitoringClient, metricsClient, k, f, resourceGetter, opClient),
-		opRelease:       opClient,
+		mo:              model.NewMonitoringOperator(monitoringClient, metricsClient, k, f, resourceGetter),
 		meteringOptions: meteringOptions,
 		rtClient:        rtClient,
 	}
-}
-
-func (h handler) handleKubeSphereMetricsQuery(req *restful.Request, resp *restful.Response) {
-	res := h.mo.GetKubeSphereStats()
-	resp.WriteAsJson(res)
 }
 
 func (h handler) handleClusterMetricsQuery(req *restful.Request, resp *restful.Response) {
@@ -84,52 +66,10 @@ func (h handler) handleClusterMetricsQuery(req *restful.Request, resp *restful.R
 	h.handleNamedMetricsQuery(resp, opt)
 }
 
-func (h handler) handleNodeMetricsQuery(req *restful.Request, resp *restful.Response) {
-	params := parseRequestParams(req)
-	opt, err := h.makeQueryOptions(params, monitoring.LevelNode)
-	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-	h.handleNamedMetricsQuery(resp, opt)
-}
-
-func (h handler) handleWorkspaceMetricsQuery(req *restful.Request, resp *restful.Response) {
-	params := parseRequestParams(req)
-	opt, err := h.makeQueryOptions(params, monitoring.LevelWorkspace)
-	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-
-	if req.QueryParameter("type") == "statistics" {
-		res := h.mo.GetWorkspaceStats(params.workspaceName)
-		resp.WriteAsJson(res)
-	} else {
-		h.handleNamedMetricsQuery(resp, opt)
-	}
-}
-
 func (h handler) handleUserMetricsQuery(req *restful.Request, resp *restful.Response) {
 	params := parseRequestParams(req)
 	opt, err := h.makeQueryOptions(params, monitoring.LevelUser)
 	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-	h.handleNamedMetricsQuery(resp, opt)
-}
-
-func (h handler) handleNamespaceMetricsQuery(req *restful.Request, resp *restful.Response) {
-	params := parseRequestParams(req)
-	opt, err := h.makeQueryOptions(params, monitoring.LevelNamespace)
-	if err != nil {
-		if err.Error() == ErrNoHit {
-			res := handleNoHit(opt.namedMetrics)
-			resp.WriteAsJson(res)
-			return
-		}
-
 		api.HandleBadRequest(resp, nil, err)
 		return
 	}
@@ -296,13 +236,12 @@ func (h handler) handleMetricLabelSetQuery(req *restful.Request, resp *restful.R
 	resp.WriteAsJson(res)
 }
 
-func (h handler) handleAdhocQuery(req *restful.Request, resp *restful.Response) {
-	var res monitoring.Metric
-
+func (h handler) handleNamespaceMetricsQuery(req *restful.Request, resp *restful.Response) {
 	params := parseRequestParams(req)
-	opt, err := h.makeQueryOptions(params, 0)
+	opt, err := h.makeQueryOptions(params, monitoring.LevelNamespace)
 	if err != nil {
 		if err.Error() == ErrNoHit {
+			res := handleNoHit(opt.namedMetrics)
 			resp.WriteAsJson(res)
 			return
 		}
@@ -310,168 +249,5 @@ func (h handler) handleAdhocQuery(req *restful.Request, resp *restful.Response) 
 		api.HandleBadRequest(resp, nil, err)
 		return
 	}
-
-	if opt.isRangeQuery() {
-		res, err = h.mo.GetMetricOverTime(params.expression, params.namespaceName, opt.start, opt.end, opt.step)
-	} else {
-		res, err = h.mo.GetMetric(params.expression, params.namespaceName, opt.time)
-	}
-
-	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-	} else {
-		resp.WriteAsJson(res)
-	}
-}
-
-// handleGrafanaDashboardImport imports Grafana template and converts it to KubeSphere dashboard.
-// The description of the Parameters:
-// grafanaDashboardName: the name of this Grafana template needed to convert.
-// grafanaDashboardUrl: the link to download this Grafana template.
-// grafanaDashboardContent: the whole JSON content needed to convert.
-// Note that the parameter grafanaDashboardName is indispensable,
-// and the requested parameter grafanaDashboardUrl and grafanaDashboardContent cannot be empty at the same time.
-func (h handler) handleGrafanaDashboardImport(req *restful.Request, resp *restful.Response) {
-	var entity monitoring.DashboardEntity
-	err := req.ReadEntity(&entity)
-	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-
-	grafanaDashboardName := req.PathParameter("grafanaDashboardName")
-	namespace := req.PathParameter("namespace")
-
-	if grafanaDashboardName == "" {
-		err := errors.New("the requested parameter grafanaDashboardName cannot be empty")
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-	if entity.GrafanaDashboardUrl == "" && entity.GrafanaDashboardContent == "" {
-		err := errors.New("the requested parameter grafanaDashboardUrl and grafanaDashboardContent cannot be empty at the same time")
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-
-	// download the Grafana dashboard
-	grafanaDashboardContent := []byte(entity.GrafanaDashboardContent)
-	if entity.GrafanaDashboardUrl != "" {
-		c, err := func(u string) ([]byte, error) {
-			_, err := url.ParseRequestURI(u)
-			if err != nil {
-				return nil, err
-			}
-			client := &http.Client{}
-			req, err := http.NewRequest("GET", u, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			r, err := client.Do(req)
-			if err != nil {
-				return nil, err
-			}
-
-			defer r.Body.Close()
-
-			c, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				return nil, err
-			}
-			return c, nil
-		}(entity.GrafanaDashboardUrl)
-
-		if err != nil {
-			api.HandleBadRequest(resp, nil, err)
-			return
-		}
-
-		grafanaDashboardContent = []byte(c)
-	}
-
-	isClusterCrd := namespace == ""
-	c := converter.NewConverter()
-	convertedDashboard, err := c.ConvertToDashboard(grafanaDashboardContent, isClusterCrd, namespace, grafanaDashboardName)
-	if err != nil {
-		api.HandleBadRequest(resp, nil, err)
-		return
-	}
-
-	ctx := context.TODO()
-	annotation := map[string]string{"kubesphere.io/description": entity.Description}
-
-	// a cluster scope dashboard or a namespaced dashboard with the same name cannot post.
-	if isClusterCrd {
-		clusterdashboard := monitoringdashboardv1alpha2.ClusterDashboard{
-			TypeMeta: v1.TypeMeta{
-				APIVersion: convertedDashboard.APIVersion,
-				Kind:       convertedDashboard.Kind,
-			},
-			ObjectMeta: v1.ObjectMeta{
-				Name:        convertedDashboard.Metadata["name"],
-				Annotations: annotation,
-			},
-			Spec: *convertedDashboard.Spec,
-		}
-
-		objKey := runtimeclient.ObjectKey{
-			Namespace: "",
-			Name:      clusterdashboard.Name,
-		}
-
-		err = h.rtClient.Get(ctx, objKey, &clusterdashboard)
-
-		if err == nil {
-			api.HandleBadRequest(resp, nil, errors.New("dashboards with the same name already exists."))
-			return
-		}
-
-		// create this dashboard
-		err = h.rtClient.Create(ctx, &clusterdashboard)
-
-		if err != nil {
-			api.HandleBadRequest(resp, nil, err)
-			return
-		}
-
-		resp.WriteAsJson(clusterdashboard)
-
-	} else {
-		dashboard := monitoringdashboardv1alpha2.Dashboard{
-			TypeMeta: v1.TypeMeta{
-				APIVersion: convertedDashboard.APIVersion,
-				Kind:       convertedDashboard.Kind,
-			},
-			ObjectMeta: v1.ObjectMeta{
-				Name:        convertedDashboard.Metadata["name"],
-				Namespace:   namespace,
-				Annotations: annotation,
-			},
-			Spec: *convertedDashboard.Spec,
-		}
-
-		objKey := runtimeclient.ObjectKey{
-			Namespace: namespace,
-			Name:      dashboard.Name,
-		}
-
-		err = h.rtClient.Get(ctx, objKey, &dashboard)
-
-		if err == nil {
-			api.HandleBadRequest(resp, nil, errors.New("dashboards with the same name already exists."))
-			return
-		}
-
-		// create this dashboard
-		err = h.rtClient.Create(ctx, &dashboard)
-
-		if err != nil {
-			api.HandleBadRequest(resp, nil, err)
-			return
-		}
-
-		resp.WriteAsJson(dashboard)
-
-	}
-
+	h.handleNamedMetricsQuery(resp, opt)
 }

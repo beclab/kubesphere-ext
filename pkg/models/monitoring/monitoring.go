@@ -25,23 +25,19 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"sigs.k8s.io/application/api/v1beta1"
 	appv1beta1 "sigs.k8s.io/application/api/v1beta1"
-
-	"kubesphere.io/api/iam/v1alpha2"
 
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	ksinformers "kubesphere.io/kubesphere/pkg/client/informers/externalversions"
 	"kubesphere.io/kubesphere/pkg/constants"
 	"kubesphere.io/kubesphere/pkg/informers"
 	"kubesphere.io/kubesphere/pkg/models/monitoring/expressions"
-	"kubesphere.io/kubesphere/pkg/models/openpitrix"
+
 	resourcev1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3/resource"
 	"kubesphere.io/kubesphere/pkg/server/errors"
-	"kubesphere.io/kubesphere/pkg/server/params"
 	meteringclient "kubesphere.io/kubesphere/pkg/simple/client/metering"
 	"kubesphere.io/kubesphere/pkg/simple/client/monitoring"
 )
@@ -70,18 +66,16 @@ type monitoringOperator struct {
 	metricsserver  monitoring.Interface
 	k8s            kubernetes.Interface
 	ks             ksinformers.SharedInformerFactory
-	op             openpitrix.Interface
 	resourceGetter *resourcev1alpha3.ResourceGetter
 }
 
-func NewMonitoringOperator(monitoringClient monitoring.Interface, metricsClient monitoring.Interface, k8s kubernetes.Interface, factory informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter, op openpitrix.Interface) MonitoringOperator {
+func NewMonitoringOperator(monitoringClient monitoring.Interface, metricsClient monitoring.Interface, k8s kubernetes.Interface, factory informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter) MonitoringOperator {
 	return &monitoringOperator{
 		prometheus:     monitoringClient,
 		metricsserver:  metricsClient,
 		k8s:            k8s,
 		ks:             factory.KubeSphereSharedInformerFactory(),
 		resourceGetter: resourceGetter,
-		op:             op,
 	}
 }
 
@@ -210,49 +204,31 @@ func (mo monitoringOperator) GetKubeSphereStats() Metrics {
 	var res Metrics
 	now := float64(time.Now().Unix())
 
-	clusterList, err := mo.ks.Cluster().V1alpha1().Clusters().Lister().List(labels.Everything())
-	clusterTotal := len(clusterList)
-	if clusterTotal == 0 {
-		clusterTotal = 1
-	}
-	if err != nil {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: KubeSphereClusterCount,
-			Error:      err.Error(),
-		})
-	} else {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: KubeSphereClusterCount,
-			MetricData: monitoring.MetricData{
-				MetricType: monitoring.MetricTypeVector,
-				MetricValues: []monitoring.MetricValue{
-					{
-						Sample: &monitoring.Point{now, float64(clusterTotal)},
-					},
-				},
-			},
-		})
-	}
+	clusterTotal := 1
 
-	wkList, err := mo.ks.Tenant().V1alpha2().WorkspaceTemplates().Lister().List(labels.Everything())
-	if err != nil {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: KubeSphereWorkspaceCount,
-			Error:      err.Error(),
-		})
-	} else {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: KubeSphereWorkspaceCount,
-			MetricData: monitoring.MetricData{
-				MetricType: monitoring.MetricTypeVector,
-				MetricValues: []monitoring.MetricValue{
-					{
-						Sample: &monitoring.Point{now, float64(len(wkList))},
-					},
+	res.Results = append(res.Results, monitoring.Metric{
+		MetricName: KubeSphereClusterCount,
+		MetricData: monitoring.MetricData{
+			MetricType: monitoring.MetricTypeVector,
+			MetricValues: []monitoring.MetricValue{
+				{
+					Sample: &monitoring.Point{now, float64(clusterTotal)},
 				},
 			},
-		})
-	}
+		},
+	})
+
+	res.Results = append(res.Results, monitoring.Metric{
+		MetricName: KubeSphereWorkspaceCount,
+		MetricData: monitoring.MetricData{
+			MetricType: monitoring.MetricTypeVector,
+			MetricValues: []monitoring.MetricValue{
+				{
+					Sample: &monitoring.Point{now, float64(1)},
+				},
+			},
+		},
+	})
 
 	usrList, err := mo.ks.Iam().V1alpha2().Users().Lister().List(labels.Everything())
 	if err != nil {
@@ -272,34 +248,6 @@ func (mo monitoringOperator) GetKubeSphereStats() Metrics {
 				},
 			},
 		})
-	}
-
-	cond := &params.Conditions{
-		Match: map[string]string{
-			openpitrix.Status: openpitrix.StatusActive,
-			openpitrix.RepoId: openpitrix.BuiltinRepoId,
-		},
-	}
-	if mo.op != nil {
-		tmpl, err := mo.op.ListApps(cond, "", false, 0, 0)
-		if err != nil {
-			res.Results = append(res.Results, monitoring.Metric{
-				MetricName: KubeSphereAppTmplCount,
-				Error:      err.Error(),
-			})
-		} else {
-			res.Results = append(res.Results, monitoring.Metric{
-				MetricName: KubeSphereAppTmplCount,
-				MetricData: monitoring.MetricData{
-					MetricType: monitoring.MetricTypeVector,
-					MetricValues: []monitoring.MetricValue{
-						{
-							Sample: &monitoring.Point{now, float64(tmpl.TotalCount)},
-						},
-					},
-				},
-			})
-		}
 	}
 
 	return res
@@ -332,67 +280,49 @@ func (mo monitoringOperator) GetWorkspaceStats(workspace string) Metrics {
 		})
 	}
 
-	devopsList, err := mo.ks.Devops().V1alpha3().DevOpsProjects().Lister().List(selector)
-	if err != nil {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceDevopsCount,
-			Error:      err.Error(),
-		})
-	} else {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceDevopsCount,
-			MetricData: monitoring.MetricData{
-				MetricType: monitoring.MetricTypeVector,
-				MetricValues: []monitoring.MetricValue{
-					{
-						Sample: &monitoring.Point{now, float64(len(devopsList))},
-					},
-				},
-			},
-		})
-	}
+	//devopsList, err := mo.ks.Devops().V1alpha3().DevOpsProjects().Lister().List(selector)
+	//if err != nil {
+	//	res.Results = append(res.Results, monitoring.Metric{
+	//		MetricName: WorkspaceDevopsCount,
+	//		Error:      err.Error(),
+	//	})
+	//} else {
+	//	res.Results = append(res.Results, monitoring.Metric{
+	//		MetricName: WorkspaceDevopsCount,
+	//		MetricData: monitoring.MetricData{
+	//			MetricType: monitoring.MetricTypeVector,
+	//			MetricValues: []monitoring.MetricValue{
+	//				{
+	//					Sample: &monitoring.Point{now, float64(len(devopsList))},
+	//				},
+	//			},
+	//		},
+	//	})
+	//}
 
-	r, _ := labels.NewRequirement(v1alpha2.UserReferenceLabel, selection.Exists, nil)
-	memberSelector := selector.DeepCopySelector().Add(*r)
-	memberList, err := mo.ks.Iam().V1alpha2().WorkspaceRoleBindings().Lister().List(memberSelector)
-	if err != nil {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceMemberCount,
-			Error:      err.Error(),
-		})
-	} else {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceMemberCount,
-			MetricData: monitoring.MetricData{
-				MetricType: monitoring.MetricTypeVector,
-				MetricValues: []monitoring.MetricValue{
-					{
-						Sample: &monitoring.Point{now, float64(len(memberList))},
-					},
+	res.Results = append(res.Results, monitoring.Metric{
+		MetricName: WorkspaceMemberCount,
+		MetricData: monitoring.MetricData{
+			MetricType: monitoring.MetricTypeVector,
+			MetricValues: []monitoring.MetricValue{
+				{
+					Sample: &monitoring.Point{now, float64(1)},
 				},
 			},
-		})
-	}
+		},
+	})
 
-	roleList, err := mo.ks.Iam().V1alpha2().WorkspaceRoles().Lister().List(selector)
-	if err != nil {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceRoleCount,
-			Error:      err.Error(),
-		})
-	} else {
-		res.Results = append(res.Results, monitoring.Metric{
-			MetricName: WorkspaceRoleCount,
-			MetricData: monitoring.MetricData{
-				MetricType: monitoring.MetricTypeVector,
-				MetricValues: []monitoring.MetricValue{
-					{
-						Sample: &monitoring.Point{now, float64(len(roleList))},
-					},
+	res.Results = append(res.Results, monitoring.Metric{
+		MetricName: WorkspaceRoleCount,
+		MetricData: monitoring.MetricData{
+			MetricType: monitoring.MetricTypeVector,
+			MetricValues: []monitoring.MetricValue{
+				{
+					Sample: &monitoring.Point{now, float64(1)},
 				},
 			},
-		})
-	}
+		},
+	})
 
 	return res
 }

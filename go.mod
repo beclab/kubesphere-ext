@@ -8,137 +8,88 @@ go 1.16
 
 require (
 	code.cloudfoundry.org/bytefmt v0.0.0-20190710193110-1eb035ffe2b6
+	github.com/Khan/genqlient v0.7.0
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
-	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/PuerkitoBio/goquery v1.5.0
-	github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
-	github.com/aws/aws-sdk-go v1.33.12
-	github.com/beevik/etree v1.1.0
-	github.com/bshuster-repo/logrus-logstash-hook v0.4.1 // indirect
-	github.com/bugsnag/bugsnag-go v1.5.0 // indirect
-	github.com/bugsnag/panicwrap v1.2.0 // indirect
-	github.com/containernetworking/cni v0.8.0
+	github.com/beclab/lldap-client v0.0.5
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/docker/distribution v2.7.1+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/docker v20.10.7+incompatible
-	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82 // indirect
-	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
-	github.com/elastic/go-elasticsearch/v5 v5.6.1
-	github.com/elastic/go-elasticsearch/v6 v6.8.2
-	github.com/elastic/go-elasticsearch/v7 v7.3.0
 	github.com/elazarl/goproxy v0.0.0-20200315184450-1f3cb6622dad // indirect
 	github.com/emicklei/go-restful v2.14.3+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
-	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/evanphx/json-patch v4.11.0+incompatible
-	github.com/fatih/structs v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/garyburd/redigo v1.6.0 // indirect
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-ldap/ldap v3.0.3+incompatible
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.4.1
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/spec v0.19.7
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-openapi/validate v0.19.8
-	github.com/go-redis/redis v6.15.2+incompatible
-	github.com/gofrs/uuid v3.2.0+incompatible // indirect
+	github.com/go-resty/resty/v2 v2.16.2
 	github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
-	github.com/google/go-cmp v0.5.6
-	github.com/google/go-containerregistry v0.6.0
-	github.com/google/gops v0.3.23
-	github.com/google/uuid v1.1.2
-	github.com/gorilla/handlers v1.4.0 // indirect
-	github.com/gorilla/websocket v1.4.2
+	github.com/google/go-cmp v0.6.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f // indirect
-	github.com/hashicorp/golang-lru v0.5.4
-	github.com/json-iterator/go v1.1.11
+	github.com/json-iterator/go v1.1.12
 	github.com/jszwec/csvutil v1.5.0
-	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
-	github.com/kubesphere/pvc-autoresizer v0.1.1
-	github.com/kubesphere/sonargo v0.0.2
-	github.com/kubesphere/storageclass-accessor v0.2.0
-	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
-	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
-	github.com/mattn/go-runewidth v0.0.4 // indirect
-	github.com/mitchellh/mapstructure v1.2.2
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0
 	github.com/open-policy-agent/opa v0.18.0
-	github.com/opencontainers/go-digest v1.0.0
-	github.com/operator-framework/helm-operator-plugins v0.0.8-0.20210810182245-240cc447b3de
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/projectcalico/kube-controllers v3.8.8+incompatible
-	github.com/projectcalico/libcalico-go v1.7.2-0.20191014160346-2382c6cdd056
 	github.com/prometheus-community/prom-label-proxy v0.2.0
 	github.com/prometheus-operator/prometheus-operator v0.42.2-0.20200928114327-fbd01683839a
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.42.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.26.0
 	github.com/prometheus/prometheus v1.8.2-0.20200907175821-8219b442c864
-	github.com/shirou/gopsutil v0.0.0-20180427012116-c95755e4bcd7 // indirect
-	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/sony/sonyflake v0.0.0-20181109022403-6d5bd6181009
 	github.com/speps/go-hashids v2.0.0+incompatible
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
-	github.com/stretchr/testify v1.7.0
-	github.com/xanzy/ssh-agent v0.2.1 // indirect
-	github.com/xenolf/lego v0.3.2-0.20160613233155-a9d8cec0e656 // indirect
-	github.com/yvasiyarov/go-metrics v0.0.0-20150112132944-c25f46c4b940 // indirect
-	github.com/yvasiyarov/gorelic v0.0.6 // indirect
-	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f // indirect
+	github.com/stretchr/testify v1.10.0
+	github.com/thoas/go-funk v0.9.3
+	github.com/xlab/treeprint v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
-	google.golang.org/grpc v1.30.0
+	golang.org/x/oauth2 v0.24.0
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/cas.v2 v2.2.0
-	gopkg.in/square/go-jose.v1 v1.1.2 // indirect
-	gopkg.in/square/go-jose.v2 v2.4.0
-	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
-	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/square/go-jose.v2 v2.2.2
+	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
-	helm.sh/helm/v3 v3.6.3
-	istio.io/api v0.0.0-20201113182140-d4b7e3fc2b44
 	istio.io/client-go v0.0.0-20201113183938-0734e976e785
 	istio.io/gogo-genproto v0.0.0-20201113182723-5b8563d8a012 // indirect
-	k8s.io/api v0.22.1
+	k8s.io/api v0.26.2
 	k8s.io/apiextensions-apiserver v0.21.4
-	k8s.io/apimachinery v0.22.1
+	k8s.io/apimachinery v0.26.2
 	k8s.io/apiserver v0.21.2
 	k8s.io/cli-runtime v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.21.2
 	k8s.io/component-base v0.21.4
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.9.0
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 	k8s.io/kubectl v0.21.2
 	k8s.io/metrics v0.21.2
-	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
+	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
 	kubesphere.io/api v0.0.0
-	kubesphere.io/client-go v0.0.0
 	kubesphere.io/monitoring-dashboard v0.2.2
-	rsc.io/letsencrypt v0.0.1 // indirect
 	sigs.k8s.io/application v0.8.4-0.20201016185654-c8e2959e57a0
 	sigs.k8s.io/controller-runtime v0.10.0
 	sigs.k8s.io/controller-tools v0.6.2
-	sigs.k8s.io/kubefed v0.8.1
-	sigs.k8s.io/kustomize/api v0.8.8
-	sigs.k8s.io/yaml v1.2.0
+	sigs.k8s.io/kustomize/kyaml v0.10.21 // indirect
 )
 
 replace (
 	bitbucket.org/liamstask/goose => bitbucket.org/liamstask/goose v0.0.0-20150115234039-8488cc47d90c
+	//bytetrade.io/web3os/lldap-client => github.com/beclab/lldap-client v0.0.2
 	cloud.google.com/go => cloud.google.com/go v0.56.0
 	cloud.google.com/go/bigquery => cloud.google.com/go/bigquery v1.4.0
 	cloud.google.com/go/bigtable => cloud.google.com/go/bigtable v1.2.0
@@ -208,6 +159,7 @@ replace (
 	github.com/aws/aws-lambda-go => github.com/aws/aws-lambda-go v1.13.3
 	github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.30.12
 	github.com/aws/aws-sdk-go-v2 => github.com/aws/aws-sdk-go-v2 v0.18.0
+	//github.com/beclab/lldap-client => ./staging/src/lldap-client
 	github.com/beevik/etree => github.com/beevik/etree v1.1.0
 	github.com/beevik/ntp => github.com/beevik/ntp v0.2.0
 	github.com/beorn7/perks => github.com/beorn7/perks v1.0.1
@@ -810,6 +762,7 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.21.2
 	k8s.io/utils => k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
 	kubesphere.io/api => ./staging/src/kubesphere.io/api
+
 	kubesphere.io/client-go => ./staging/src/kubesphere.io/client-go
 	kubesphere.io/monitoring-dashboard => kubesphere.io/monitoring-dashboard v0.2.2
 	rsc.io/binaryregexp => rsc.io/binaryregexp v0.2.0

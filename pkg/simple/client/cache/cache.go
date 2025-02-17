@@ -36,6 +36,6 @@ type Interface interface {
 	// Exists checks the existence of a give key
 	Exists(keys ...string) (bool, error)
 
-	// Expires updates object's expiration time, return err if key doesn't exist
+	// Expire updates object's expiration time, return err if key doesn't exist
 	Expire(key string, duration time.Duration) error
 }

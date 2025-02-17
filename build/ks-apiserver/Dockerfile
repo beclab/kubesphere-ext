@@ -41,6 +41,7 @@ FROM alpine:3.11
 
 COPY --from=base_os_context /out/ /
 COPY --from=build_context /out/ /
+RUN apk update && apk add bash
 
 WORKDIR /
 

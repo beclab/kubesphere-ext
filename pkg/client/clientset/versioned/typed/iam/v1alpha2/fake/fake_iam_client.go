@@ -36,32 +36,16 @@ func (c *FakeIamV1alpha2) GlobalRoleBindings() v1alpha2.GlobalRoleBindingInterfa
 	return &FakeGlobalRoleBindings{c}
 }
 
-func (c *FakeIamV1alpha2) Groups() v1alpha2.GroupInterface {
-	return &FakeGroups{c}
-}
-
-func (c *FakeIamV1alpha2) GroupBindings() v1alpha2.GroupBindingInterface {
-	return &FakeGroupBindings{c}
-}
-
-func (c *FakeIamV1alpha2) LoginRecords() v1alpha2.LoginRecordInterface {
-	return &FakeLoginRecords{c}
-}
-
 func (c *FakeIamV1alpha2) RoleBases() v1alpha2.RoleBaseInterface {
 	return &FakeRoleBases{c}
 }
 
+func (c *FakeIamV1alpha2) Syncs() v1alpha2.SyncInterface {
+	return &FakeSyncs{c}
+}
+
 func (c *FakeIamV1alpha2) Users() v1alpha2.UserInterface {
 	return &FakeUsers{c}
-}
-
-func (c *FakeIamV1alpha2) WorkspaceRoles() v1alpha2.WorkspaceRoleInterface {
-	return &FakeWorkspaceRoles{c}
-}
-
-func (c *FakeIamV1alpha2) WorkspaceRoleBindings() v1alpha2.WorkspaceRoleBindingInterface {
-	return &FakeWorkspaceRoleBindings{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

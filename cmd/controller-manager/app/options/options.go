@@ -28,50 +28,20 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"kubesphere.io/kubesphere/pkg/apiserver/authentication"
-
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/tools/leaderelection"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
 
-	"kubesphere.io/kubesphere/pkg/simple/client/devops/jenkins"
-	"kubesphere.io/kubesphere/pkg/simple/client/gateway"
 	"kubesphere.io/kubesphere/pkg/simple/client/k8s"
-	ldapclient "kubesphere.io/kubesphere/pkg/simple/client/ldap"
-	"kubesphere.io/kubesphere/pkg/simple/client/multicluster"
-	"kubesphere.io/kubesphere/pkg/simple/client/network"
-	"kubesphere.io/kubesphere/pkg/simple/client/openpitrix"
-	"kubesphere.io/kubesphere/pkg/simple/client/s3"
-	"kubesphere.io/kubesphere/pkg/simple/client/servicemesh"
 )
 
 type KubeSphereControllerManagerOptions struct {
-	KubernetesOptions     *k8s.KubernetesOptions
-	DevopsOptions         *jenkins.Options
-	S3Options             *s3.Options
-	AuthenticationOptions *authentication.Options
-	LdapOptions           *ldapclient.Options
-	OpenPitrixOptions     *openpitrix.Options
-	NetworkOptions        *network.Options
-	MultiClusterOptions   *multicluster.Options
-	ServiceMeshOptions    *servicemesh.Options
-	GatewayOptions        *gateway.Options
-	MonitoringOptions     *prometheus.Options
-	LeaderElect           bool
-	LeaderElection        *leaderelection.LeaderElectionConfig
-	WebhookCertDir        string
-
-	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
-	// There are other projects also built on sigs.k8s.io/application, when KubeSphere installed along side
-	// them, conflicts happen. So we leave an option to only reconcile applications  matched with the given
-	// selector. Default will reconcile all applications.
-	//    For example
-	//      "kubesphere.io/creator=" means reconcile applications with this label key
-	//      "!kubesphere.io/creator" means exclude applications with this key
-	ApplicationSelector string
+	KubernetesOptions *k8s.KubernetesOptions
+	MonitoringOptions *prometheus.Options
+	LeaderElect       bool
+	LeaderElection    *leaderelection.LeaderElectionConfig
+	WebhookCertDir    string
 
 	// ControllerGates is the list of controller gates to enable or disable controller.
 	// '*' means "all enabled by default controllers"
@@ -82,32 +52,19 @@ type KubeSphereControllerManagerOptions struct {
 	// * has the lowest priority.
 	//     e.g. *,-foo, means "disable 'foo'"
 	ControllerGates []string
-
-	// Enable gops or not.
-	GOPSEnabled bool
 }
 
 func NewKubeSphereControllerManagerOptions() *KubeSphereControllerManagerOptions {
 	s := &KubeSphereControllerManagerOptions{
-		KubernetesOptions:     k8s.NewKubernetesOptions(),
-		DevopsOptions:         jenkins.NewDevopsOptions(),
-		S3Options:             s3.NewS3Options(),
-		LdapOptions:           ldapclient.NewOptions(),
-		OpenPitrixOptions:     openpitrix.NewOptions(),
-		NetworkOptions:        network.NewNetworkOptions(),
-		MultiClusterOptions:   multicluster.NewOptions(),
-		ServiceMeshOptions:    servicemesh.NewServiceMeshOptions(),
-		AuthenticationOptions: authentication.NewOptions(),
-		GatewayOptions:        gateway.NewGatewayOptions(),
+		KubernetesOptions: k8s.NewKubernetesOptions(),
 		LeaderElection: &leaderelection.LeaderElectionConfig{
 			LeaseDuration: 30 * time.Second,
 			RenewDeadline: 15 * time.Second,
 			RetryPeriod:   5 * time.Second,
 		},
-		LeaderElect:         false,
-		WebhookCertDir:      "",
-		ApplicationSelector: "",
-		ControllerGates:     []string{"*"},
+		LeaderElect:     false,
+		WebhookCertDir:  "",
+		ControllerGates: []string{"*"},
 	}
 
 	return s
@@ -117,15 +74,6 @@ func (s *KubeSphereControllerManagerOptions) Flags(allControllerNameSelectors []
 	fss := cliflag.NamedFlagSets{}
 
 	s.KubernetesOptions.AddFlags(fss.FlagSet("kubernetes"), s.KubernetesOptions)
-	s.DevopsOptions.AddFlags(fss.FlagSet("devops"), s.DevopsOptions)
-	s.S3Options.AddFlags(fss.FlagSet("s3"), s.S3Options)
-	s.AuthenticationOptions.AddFlags(fss.FlagSet("authentication"), s.AuthenticationOptions)
-	s.LdapOptions.AddFlags(fss.FlagSet("ldap"), s.LdapOptions)
-	s.OpenPitrixOptions.AddFlags(fss.FlagSet("openpitrix"), s.OpenPitrixOptions)
-	s.NetworkOptions.AddFlags(fss.FlagSet("network"), s.NetworkOptions)
-	s.MultiClusterOptions.AddFlags(fss.FlagSet("multicluster"), s.MultiClusterOptions)
-	s.ServiceMeshOptions.AddFlags(fss.FlagSet("servicemesh"), s.ServiceMeshOptions)
-	s.GatewayOptions.AddFlags(fss.FlagSet("gateway"), s.GatewayOptions)
 	fs := fss.FlagSet("leaderelection")
 	s.bindLeaderElectionFlags(s.LeaderElection, fs)
 
@@ -139,16 +87,10 @@ func (s *KubeSphereControllerManagerOptions) Flags(allControllerNameSelectors []
 		"{TempDir}/k8s-webhook-server/serving-certs")
 
 	gfs := fss.FlagSet("generic")
-	gfs.StringVar(&s.ApplicationSelector, "application-selector", s.ApplicationSelector, ""+
-		"Only reconcile application(sigs.k8s.io/application) objects match given selector, this could avoid conflicts with "+
-		"other projects built on top of sig-application. Default behavior is to reconcile all of application objects.")
 	gfs.StringSliceVar(&s.ControllerGates, "controllers", []string{"*"}, fmt.Sprintf(""+
 		"A list of controllers to enable. '*' enables all on-by-default controllers, 'foo' enables the controller "+
 		"named 'foo', '-foo' disables the controller named 'foo'.\nAll controllers: %s",
 		strings.Join(allControllerNameSelectors, ", ")))
-
-	gfs.BoolVar(&s.GOPSEnabled, "gops", s.GOPSEnabled, "Whether to enable gops or not.  When enabled this option, "+
-		"controller-manager will listen on a random port on 127.0.0.1, then you can use the gops tool to list and diagnose the controller-manager currently running.")
 
 	kfs := fss.FlagSet("klog")
 	local := flag.NewFlagSet("klog", flag.ExitOnError)
@@ -164,21 +106,7 @@ func (s *KubeSphereControllerManagerOptions) Flags(allControllerNameSelectors []
 // Validate Options and Genetic Options
 func (o *KubeSphereControllerManagerOptions) Validate(allControllerNameSelectors []string) []error {
 	var errs []error
-	errs = append(errs, o.DevopsOptions.Validate()...)
 	errs = append(errs, o.KubernetesOptions.Validate()...)
-	errs = append(errs, o.S3Options.Validate()...)
-	errs = append(errs, o.OpenPitrixOptions.Validate()...)
-	errs = append(errs, o.NetworkOptions.Validate()...)
-	errs = append(errs, o.LdapOptions.Validate()...)
-	errs = append(errs, o.MultiClusterOptions.Validate()...)
-
-	// genetic option: application-selector
-	if len(o.ApplicationSelector) != 0 {
-		_, err := labels.Parse(o.ApplicationSelector)
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
 
 	// genetic option: controllers, check all selectors are valid
 	allControllersNameSet := sets.NewString(allControllerNameSelectors...)
@@ -233,13 +161,4 @@ func (s *KubeSphereControllerManagerOptions) bindLeaderElectionFlags(l *leaderel
 // When misconfigured, the app should just crash directly
 func (s *KubeSphereControllerManagerOptions) MergeConfig(cfg *controllerconfig.Config) {
 	s.KubernetesOptions = cfg.KubernetesOptions
-	s.DevopsOptions = cfg.DevopsOptions
-	s.S3Options = cfg.S3Options
-	s.AuthenticationOptions = cfg.AuthenticationOptions
-	s.LdapOptions = cfg.LdapOptions
-	s.OpenPitrixOptions = cfg.OpenPitrixOptions
-	s.NetworkOptions = cfg.NetworkOptions
-	s.MultiClusterOptions = cfg.MultiClusterOptions
-	s.ServiceMeshOptions = cfg.ServiceMeshOptions
-	s.GatewayOptions = cfg.GatewayOptions
 }

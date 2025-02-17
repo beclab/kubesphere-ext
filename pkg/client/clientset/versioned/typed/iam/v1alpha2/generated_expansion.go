@@ -22,16 +22,8 @@ type GlobalRoleExpansion interface{}
 
 type GlobalRoleBindingExpansion interface{}
 
-type GroupExpansion interface{}
-
-type GroupBindingExpansion interface{}
-
-type LoginRecordExpansion interface{}
-
 type RoleBaseExpansion interface{}
 
+type SyncExpansion interface{}
+
 type UserExpansion interface{}
-
-type WorkspaceRoleExpansion interface{}
-
-type WorkspaceRoleBindingExpansion interface{}

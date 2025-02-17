@@ -34,20 +34,16 @@ const (
 	KubeSphereConfigName          = "kubesphere-config"
 	KubeSphereConfigMapDataKey    = "kubesphere.yaml"
 
-	ClusterNameLabelKey               = "kubesphere.io/cluster"
-	NameLabelKey                      = "kubesphere.io/name"
-	WorkspaceLabelKey                 = "kubesphere.io/workspace"
-	NamespaceLabelKey                 = "kubesphere.io/namespace"
-	DisplayNameAnnotationKey          = "kubesphere.io/alias-name"
-	ChartRepoIdLabelKey               = "application.kubesphere.io/repo-id"
-	ChartApplicationIdLabelKey        = "application.kubesphere.io/app-id"
-	ChartApplicationVersionIdLabelKey = "application.kubesphere.io/app-version-id"
-	CategoryIdLabelKey                = "application.kubesphere.io/app-category-id"
-	DanglingAppCleanupKey             = "application.kubesphere.io/app-cleanup"
-	CreatorAnnotationKey              = "kubesphere.io/creator"
-	UsernameLabelKey                  = "kubesphere.io/username"
-	DevOpsProjectLabelKey             = "kubesphere.io/devopsproject"
-	KubefedManagedLabel               = "kubefed.io/managed"
+	ClusterNameLabelKey      = "kubesphere.io/cluster"
+	NameLabelKey             = "kubesphere.io/name"
+	WorkspaceLabelKey        = "kubesphere.io/workspace"
+	NamespaceLabelKey        = "kubesphere.io/namespace"
+	DisplayNameAnnotationKey = "kubesphere.io/alias-name"
+
+	CreatorAnnotationKey  = "kubesphere.io/creator"
+	UsernameLabelKey      = "kubesphere.io/username"
+	DevOpsProjectLabelKey = "kubesphere.io/devopsproject"
+	KubefedManagedLabel   = "kubefed.io/managed"
 
 	UserNameHeader = "X-Token-Username"
 
@@ -130,18 +126,8 @@ const (
 	PodMetersTag       = "Pod Meters"
 	ServiceMetricsTag  = "ServiceName Meters"
 
-	ApplicationReleaseName = "meta.helm.sh/release-name"
-	ApplicationReleaseNS   = "meta.helm.sh/release-namespace"
-
 	ApplicationName    = "app.kubernetes.io/name"
 	ApplicationVersion = "app.kubernetes.io/version"
-	AlertingTag        = "Alerting"
-
-	NotificationTag             = "Notification"
-	NotificationSecretNamespace = "kubesphere-monitoring-federated"
-	NotificationManagedLabel    = "notification.kubesphere.io/managed"
-
-	DashboardTag = "Dashboard"
 )
 
 var (

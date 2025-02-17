@@ -24,7 +24,6 @@ import (
 	"k8s.io/klog"
 
 	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
-	tenantv1alpha1 "kubesphere.io/api/tenant/v1alpha1"
 
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/apiserver/query"
@@ -52,23 +51,23 @@ func (d *usersGetter) List(_ string, query *query.Query) (*api.ListResult, error
 	var err error
 
 	if namespace := query.Filters[iamv1alpha2.ScopeNamespace]; namespace != "" {
-		role := query.Filters[iamv1alpha2.ResourcesSingularRole]
-		users, err = d.listAllUsersInNamespace(string(namespace), string(role))
-		delete(query.Filters, iamv1alpha2.ScopeNamespace)
-		delete(query.Filters, iamv1alpha2.ResourcesSingularRole)
+		//role := query.Filters[iamv1alpha2.ResourcesSingularRole]
+		//users, err = d.listAllUsersInNamespace(string(namespace), string(role))
+		//delete(query.Filters, iamv1alpha2.ScopeNamespace)
+		//delete(query.Filters, iamv1alpha2.ResourcesSingularRole)
 	} else if workspace := query.Filters[iamv1alpha2.ScopeWorkspace]; workspace != "" {
-		workspaceRole := query.Filters[iamv1alpha2.ResourcesSingularWorkspaceRole]
-		users, err = d.listAllUsersInWorkspace(string(workspace), string(workspaceRole))
-		delete(query.Filters, iamv1alpha2.ScopeWorkspace)
-		delete(query.Filters, iamv1alpha2.ResourcesSingularWorkspaceRole)
+		//workspaceRole := query.Filters[iamv1alpha2.ResourcesSingularWorkspaceRole]
+		//users, err = d.listAllUsersInWorkspace(string(workspace), string(workspaceRole))
+		//delete(query.Filters, iamv1alpha2.ScopeWorkspace)
+		//delete(query.Filters, iamv1alpha2.ResourcesSingularWorkspaceRole)
 	} else if cluster := query.Filters[iamv1alpha2.ScopeCluster]; cluster == "true" {
-		clusterRole := query.Filters[iamv1alpha2.ResourcesSingularClusterRole]
-		users, err = d.listAllUsersInCluster(string(clusterRole))
-		delete(query.Filters, iamv1alpha2.ScopeCluster)
-		delete(query.Filters, iamv1alpha2.ResourcesSingularClusterRole)
+		//clusterRole := query.Filters[iamv1alpha2.ResourcesSingularClusterRole]
+		//users, err = d.listAllUsersInCluster(string(clusterRole))
+		//delete(query.Filters, iamv1alpha2.ScopeCluster)
+		//delete(query.Filters, iamv1alpha2.ResourcesSingularClusterRole)
 	} else if globalRole := query.Filters[iamv1alpha2.ResourcesSingularGlobalRole]; globalRole != "" {
-		users, err = d.listAllUsersByGlobalRole(string(globalRole))
-		delete(query.Filters, iamv1alpha2.ResourcesSingularGlobalRole)
+		//users, err = d.listAllUsersByGlobalRole(string(globalRole))
+		//delete(query.Filters, iamv1alpha2.ResourcesSingularGlobalRole)
 	} else {
 		users, err = d.ksInformer.Iam().V1alpha2().Users().Lister().List(query.Selector())
 	}
@@ -119,53 +118,53 @@ func (d *usersGetter) filter(object runtime.Object, filter query.Filter) bool {
 	}
 }
 
-func (d *usersGetter) listAllUsersInWorkspace(workspace, role string) ([]*iamv1alpha2.User, error) {
-	var users []*iamv1alpha2.User
-	var err error
-	workspaceRoleBindings, err := d.ksInformer.Iam().V1alpha2().
-		WorkspaceRoleBindings().Lister().List(labels.SelectorFromValidatedSet(labels.Set{tenantv1alpha1.WorkspaceLabel: workspace}))
-
-	if err != nil {
-		klog.Error(err)
-		return nil, err
-	}
-
-	for _, roleBinding := range workspaceRoleBindings {
-		if role != "" && roleBinding.RoleRef.Name != role {
-			continue
-		}
-		for _, subject := range roleBinding.Subjects {
-			if subject.Kind == iamv1alpha2.ResourceKindUser {
-
-				if contains(users, subject.Name) {
-					klog.Warningf("conflict role binding found: %s, username:%s", roleBinding.ObjectMeta.String(), subject.Name)
-					continue
-				}
-
-				obj, err := d.Get("", subject.Name)
-
-				if err != nil {
-					if errors.IsNotFound(err) {
-						klog.Warningf("orphan subject: %s", subject.String())
-						continue
-					}
-					klog.Error(err)
-					return nil, err
-				}
-
-				user := obj.(*iamv1alpha2.User)
-				user = user.DeepCopy()
-				if user.Annotations == nil {
-					user.Annotations = make(map[string]string, 0)
-				}
-				user.Annotations[iamv1alpha2.WorkspaceRoleAnnotation] = roleBinding.RoleRef.Name
-				users = append(users, user)
-			}
-		}
-	}
-
-	return users, nil
-}
+//func (d *usersGetter) listAllUsersInWorkspace(workspace, role string) ([]*iamv1alpha2.User, error) {
+//	var users []*iamv1alpha2.User
+//	var err error
+//	workspaceRoleBindings, err := d.ksInformer.Iam().V1alpha2().
+//		WorkspaceRoleBindings().Lister().List(labels.SelectorFromValidatedSet(labels.Set{tenantv1alpha1.WorkspaceLabel: workspace}))
+//
+//	if err != nil {
+//		klog.Error(err)
+//		return nil, err
+//	}
+//
+//	for _, roleBinding := range workspaceRoleBindings {
+//		if role != "" && roleBinding.RoleRef.Name != role {
+//			continue
+//		}
+//		for _, subject := range roleBinding.Subjects {
+//			if subject.Kind == iamv1alpha2.ResourceKindUser {
+//
+//				if contains(users, subject.Name) {
+//					klog.Warningf("conflict role binding found: %s, username:%s", roleBinding.ObjectMeta.String(), subject.Name)
+//					continue
+//				}
+//
+//				obj, err := d.Get("", subject.Name)
+//
+//				if err != nil {
+//					if errors.IsNotFound(err) {
+//						klog.Warningf("orphan subject: %s", subject.String())
+//						continue
+//					}
+//					klog.Error(err)
+//					return nil, err
+//				}
+//
+//				user := obj.(*iamv1alpha2.User)
+//				user = user.DeepCopy()
+//				if user.Annotations == nil {
+//					user.Annotations = make(map[string]string, 0)
+//				}
+//				user.Annotations[iamv1alpha2.WorkspaceRoleAnnotation] = roleBinding.RoleRef.Name
+//				users = append(users, user)
+//			}
+//		}
+//	}
+//
+//	return users, nil
+//}
 
 func (d *usersGetter) listAllUsersInNamespace(namespace, role string) ([]*iamv1alpha2.User, error) {
 	var users []*iamv1alpha2.User
@@ -207,55 +206,6 @@ func (d *usersGetter) listAllUsersInNamespace(namespace, role string) ([]*iamv1a
 					user.Annotations = make(map[string]string, 0)
 				}
 				user.Annotations[iamv1alpha2.RoleAnnotation] = roleBinding.RoleRef.Name
-				users = append(users, user)
-			}
-		}
-	}
-
-	return users, nil
-}
-
-func (d *usersGetter) listAllUsersByGlobalRole(globalRole string) ([]*iamv1alpha2.User, error) {
-	var users []*iamv1alpha2.User
-	var err error
-
-	globalRoleBindings, err := d.ksInformer.Iam().V1alpha2().
-		GlobalRoleBindings().Lister().List(labels.Everything())
-
-	if err != nil {
-		klog.Error(err)
-		return nil, err
-	}
-
-	for _, roleBinding := range globalRoleBindings {
-		if roleBinding.RoleRef.Name != globalRole {
-			continue
-		}
-		for _, subject := range roleBinding.Subjects {
-			if subject.Kind == iamv1alpha2.ResourceKindUser {
-
-				if contains(users, subject.Name) {
-					klog.Warningf("conflict role binding found: %s, username:%s", roleBinding.ObjectMeta.String(), subject.Name)
-					continue
-				}
-
-				obj, err := d.Get("", subject.Name)
-
-				if err != nil {
-					if errors.IsNotFound(err) {
-						klog.Warningf("orphan subject: %s", subject.String())
-						continue
-					}
-					klog.Error(err)
-					return nil, err
-				}
-
-				user := obj.(*iamv1alpha2.User)
-				user = user.DeepCopy()
-				if user.Annotations == nil {
-					user.Annotations = make(map[string]string, 0)
-				}
-				user.Annotations[iamv1alpha2.GlobalRoleAnnotation] = roleBinding.RoleRef.Name
 				users = append(users, user)
 			}
 		}

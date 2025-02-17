@@ -19,21 +19,24 @@ package filters
 import (
 	"context"
 	"errors"
-	"net/http"
-
+	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/klog"
 
 	"kubesphere.io/kubesphere/pkg/apiserver/authorization/authorizer"
 	"kubesphere.io/kubesphere/pkg/apiserver/request"
+	"net/http"
 )
 
 // WithAuthorization passes all authorized requests on to handler, and returns forbidden error otherwise.
 func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) http.Handler {
 	if authorizers == nil {
-		klog.Warningf("Authorization is disabled")
+		klog.V(0).Infof("Authorization is disabled")
 		return handler
 	}
 
@@ -46,6 +49,8 @@ func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) 
 		if err != nil {
 			responsewriters.InternalError(w, req, err)
 		}
+		klog.V(0).Infof("userinfo.username: %v", attributes.GetUser())
+		klog.V(0).Infof("userinfo.path: %v", attributes.GetPath())
 
 		authorized, reason, err := authorizers.Authorize(attributes)
 		if authorized == authorizer.DecisionAllow {
@@ -58,7 +63,7 @@ func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) 
 			return
 		}
 
-		klog.V(4).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
+		klog.V(0).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
 		responsewriters.Forbidden(ctx, attributes, w, req, reason, defaultSerializer)
 	})
 }
@@ -81,16 +86,53 @@ func getAuthorizerAttributes(ctx context.Context) (authorizer.Attributes, error)
 	attribs.ResourceRequest = requestInfo.IsResourceRequest
 	attribs.Path = requestInfo.Path
 	attribs.Verb = requestInfo.Verb
-	attribs.Cluster = requestInfo.Cluster
-	attribs.Workspace = requestInfo.Workspace
 	attribs.KubernetesRequest = requestInfo.IsKubernetesRequest
 	attribs.APIGroup = requestInfo.APIGroup
 	attribs.APIVersion = requestInfo.APIVersion
 	attribs.Resource = requestInfo.Resource
 	attribs.Subresource = requestInfo.Subresource
 	attribs.Namespace = requestInfo.Namespace
-	attribs.DevOps = requestInfo.DevOps
 	attribs.Name = requestInfo.Name
 
 	return &attribs, nil
+}
+
+// if using basic auth. But only treats request with requestURI `/oauth/authorize` as login attempt
+func WithAuthentication(handler http.Handler, authRequest authenticator.Request) http.Handler {
+	if authRequest == nil {
+		klog.Warningf("Authentication is disabled")
+		return handler
+	}
+	s := serializer.NewCodecFactory(runtime.NewScheme()).WithoutConversion()
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		resp, ok, err := authRequest.AuthenticateRequest(req)
+		_, _, usingBasicAuth := req.BasicAuth()
+
+		defer func() {
+			// if we authenticated successfully, go ahead and remove the bearer token so that no one
+			// is ever tempted to use it inside of the API server
+			if usingBasicAuth && ok {
+				req.Header.Del("Authorization")
+			}
+		}()
+
+		if err != nil || !ok {
+			ctx := req.Context()
+			requestInfo, found := request.RequestInfoFrom(ctx)
+			if !found {
+				responsewriters.InternalError(w, req, errors.New("no RequestInfo found in the context"))
+				return
+			}
+			gv := schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
+			responsewriters.ErrorNegotiated(apierrors.NewUnauthorized(fmt.Sprintf("Unauthorized: %s", err)), s, gv, w, req)
+			return
+		}
+
+		klog.V(0).Infof("userInfo: %#v", resp.User)
+
+		req = req.WithContext(request.WithUser(req.Context(), resp.User))
+		handler.ServeHTTP(w, req)
+	})
 }

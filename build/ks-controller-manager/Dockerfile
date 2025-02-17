@@ -50,7 +50,6 @@ RUN make ks-controller-manager
 RUN mv /workspace/bin/cmd/controller-manager ${OUTDIR}/usr/local/bin/
 
 # Copy gateway config and helm chart
-RUN mv /workspace/config/gateway ${OUTDIR}/var/helm-charts/
 RUN mv /workspace/config/watches.yaml ${OUTDIR}/var/helm-charts/
 
 # Final Image

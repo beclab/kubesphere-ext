@@ -23,8 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubesphere.io/kubesphere/pkg/models/openpitrix"
-
 	"kubesphere.io/kubesphere/pkg/informers"
 	monitorhle "kubesphere.io/kubesphere/pkg/kapis/monitoring/v1alpha3"
 	resourcev1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3/resource"
@@ -45,6 +43,6 @@ type meterHandler interface {
 	HandlePVCMeterQuery(req *restful.Request, resp *restful.Response)
 }
 
-func newHandler(k kubernetes.Interface, m monitoring.Interface, f informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter, meteringOptions *meteringclient.Options, opClient openpitrix.Interface, rtClient runtimeclient.Client) meterHandler {
-	return monitorhle.NewHandler(k, m, nil, f, resourceGetter, meteringOptions, opClient, rtClient)
+func newHandler(k kubernetes.Interface, m monitoring.Interface, f informers.InformerFactory, resourceGetter *resourcev1alpha3.ResourceGetter, meteringOptions *meteringclient.Options, rtClient runtimeclient.Client) meterHandler {
+	return monitorhle.NewHandler(k, m, nil, f, resourceGetter, meteringOptions, rtClient)
 }

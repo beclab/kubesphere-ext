@@ -4,25 +4,20 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 package v1alpha3
 
 import (
 	"regexp"
 	"strings"
 
-	"kubesphere.io/kubesphere/pkg/models/openpitrix"
-	"kubesphere.io/kubesphere/pkg/server/params"
-
 	"github.com/emicklei/go-restful"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
 	"kubesphere.io/kubesphere/pkg/api"
@@ -379,28 +374,28 @@ func (h handler) HandlePVCMeterQuery(req *restful.Request, resp *restful.Respons
 func (h handler) collectOps(cluster, ns string) []string {
 
 	var ops []string
-
-	conditions := params.Conditions{
-		Match: make(map[string]string),
-		Fuzzy: make(map[string]string),
-	}
-
-	resp, err := h.opRelease.ListApplications("", cluster, ns, &conditions, 10, 0, "", false)
-	if err != nil {
-		klog.Error("failed to list op apps")
-		return nil
-	}
-	totalCount := resp.TotalCount
-	resp, err = h.opRelease.ListApplications("", cluster, ns, &conditions, totalCount, 0, "", false)
-	if err != nil {
-		klog.Error("failed to list op apps")
-		return nil
-	}
-
-	for _, item := range resp.Items {
-		app := item.(*openpitrix.Application)
-		ops = append(ops, app.Cluster.ClusterId)
-	}
+	//
+	//conditions := params.Conditions{
+	//	Match: make(map[string]string),
+	//	Fuzzy: make(map[string]string),
+	//}
+	//
+	//resp, err := h.opRelease.ListApplications("", cluster, ns, &conditions, 10, 0, "", false)
+	//if err != nil {
+	//	klog.Error("failed to list op apps")
+	//	return nil
+	//}
+	//totalCount := resp.TotalCount
+	//resp, err = h.opRelease.ListApplications("", cluster, ns, &conditions, totalCount, 0, "", false)
+	//if err != nil {
+	//	klog.Error("failed to list op apps")
+	//	return nil
+	//}
+	//
+	//for _, item := range resp.Items {
+	//	app := item.(*openpitrix.Application)
+	//	ops = append(ops, app.Cluster.ClusterId)
+	//}
 	return ops
 }
 func (h handler) getOpWorkloads(cluster, ns string, ops []string) map[string][]string {
@@ -411,17 +406,17 @@ func (h handler) getOpWorkloads(cluster, ns string, ops []string) map[string][]s
 		ops = h.collectOps(cluster, ns)
 	}
 
-	for _, op := range ops {
-		app, err := h.opRelease.DescribeApplication("", cluster, ns, op)
-		if err != nil {
-			klog.Error(err)
-			return nil
-		}
-		for _, object := range app.ReleaseInfo {
-			unstructuredObj := object.(*unstructured.Unstructured)
-			componentsMap[op] = append(componentsMap[op], unstructuredObj.GetKind()+":"+unstructuredObj.GetName())
-		}
-	}
+	//for _, op := range ops {
+	//	app, err := h.opRelease.DescribeApplication("", cluster, ns, op)
+	//	if err != nil {
+	//		klog.Error(err)
+	//		return nil
+	//	}
+	//	for _, object := range app.ReleaseInfo {
+	//		unstructuredObj := object.(*unstructured.Unstructured)
+	//		componentsMap[op] = append(componentsMap[op], unstructuredObj.GetKind()+":"+unstructuredObj.GetName())
+	//	}
+	//}
 
 	return componentsMap
 }

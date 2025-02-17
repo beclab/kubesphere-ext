@@ -18,10 +18,10 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/google/gops/agent"
 	"github.com/spf13/cobra"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -57,14 +57,6 @@ cluster's shared state through which all other components interact.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if errs := s.Validate(); len(errs) != 0 {
 				return utilerrors.NewAggregate(errs)
-			}
-
-			if s.GOPSEnabled {
-				// Add agent to report additional information such as the current stack trace, Go version, memory stats, etc.
-				// Bind to a random port on address 127.0.0.1.
-				if err := agent.Listen(agent.Options{}); err != nil {
-					klog.Fatal(err)
-				}
 			}
 
 			return Run(s, apiserverconfig.WatchConfigChange(), signals.SetupSignalHandler())
@@ -144,7 +136,7 @@ func run(s *options.ServerRunOptions, ctx context.Context) error {
 	}
 
 	err = apiserver.Run(ctx)
-	if err == http.ErrServerClosed {
+	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
 	return err
