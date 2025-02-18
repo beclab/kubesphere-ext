@@ -30,6 +30,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: beclab/ks-apiserver:${{ github.event.inputs.tags }}
+          tags: beclab/ks-controller-manager:${{ github.event.inputs.tags }}
           file: build/ks-controller-manager/Dockerfile
           platforms: linux/amd64,linux/arm64
