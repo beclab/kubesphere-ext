@@ -43,13 +43,12 @@ func New(authorizationHandlers ...authorizer.Authorizer) authorizer.Authorizer {
 	return unionAuthzHandler(authorizationHandlers)
 }
 
-// Authorizes against a chain of authorizer.Authorizer objects and returns nil if successful and returns error if unsuccessful
+// Authorize against a chain of authorizer.Authorizer objects and returns nil if successful and returns error if unsuccessful
 func (authzHandler unionAuthzHandler) Authorize(a authorizer.Attributes) (authorizer.Decision, string, error) {
 	var (
 		errlist    []error
 		reasonlist []string
 	)
-
 	for _, currAuthzHandler := range authzHandler {
 		decision, reason, err := currAuthzHandler.Authorize(a)
 

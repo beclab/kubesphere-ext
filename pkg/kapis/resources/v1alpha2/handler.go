@@ -17,13 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
@@ -31,15 +29,12 @@ import (
 	"kubesphere.io/kubesphere/pkg/api"
 	"kubesphere.io/kubesphere/pkg/informers"
 	"kubesphere.io/kubesphere/pkg/models/components"
-	"kubesphere.io/kubesphere/pkg/models/git"
 	"kubesphere.io/kubesphere/pkg/models/kubeconfig"
 	"kubesphere.io/kubesphere/pkg/models/kubectl"
 	"kubesphere.io/kubesphere/pkg/models/quotas"
-	"kubesphere.io/kubesphere/pkg/models/registries"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/resource"
 	"kubesphere.io/kubesphere/pkg/models/revisions"
-	"kubesphere.io/kubesphere/pkg/models/routers"
 	"kubesphere.io/kubesphere/pkg/server/errors"
 	"kubesphere.io/kubesphere/pkg/server/params"
 )
@@ -49,11 +44,9 @@ type resourceHandler struct {
 	componentsGetter    components.ComponentsGetter
 	resourceQuotaGetter quotas.ResourceQuotaGetter
 	revisionGetter      revisions.RevisionGetter
-	routerOperator      routers.RouterOperator
-	gitVerifier         git.GitVerifier
-	registryGetter      registries.RegistryGetter
-	kubeconfigOperator  kubeconfig.Interface
-	kubectlOperator     kubectl.Interface
+	//routerOperator      routers.RouterOperator
+	kubeconfigOperator kubeconfig.Interface
+	kubectlOperator    kubectl.Interface
 }
 
 func newResourceHandler(k8sClient kubernetes.Interface, factory informers.InformerFactory, masterURL string) *resourceHandler {
@@ -63,10 +56,8 @@ func newResourceHandler(k8sClient kubernetes.Interface, factory informers.Inform
 		componentsGetter:    components.NewComponentsGetter(factory.KubernetesSharedInformerFactory()),
 		resourceQuotaGetter: quotas.NewResourceQuotaGetter(factory.KubernetesSharedInformerFactory()),
 		revisionGetter:      revisions.NewRevisionGetter(factory.KubernetesSharedInformerFactory()),
-		routerOperator:      routers.NewRouterOperator(k8sClient, factory.KubernetesSharedInformerFactory()),
-		gitVerifier:         git.NewGitVerifier(factory.KubernetesSharedInformerFactory()),
-		registryGetter:      registries.NewRegistryGetter(factory.KubernetesSharedInformerFactory()),
-		kubeconfigOperator:  kubeconfig.NewReadOnlyOperator(factory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps().Lister(), masterURL),
+		//routerOperator:      routers.NewRouterOperator(k8sClient, factory.KubernetesSharedInformerFactory()),
+		kubeconfigOperator: kubeconfig.NewReadOnlyOperator(factory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps().Lister(), masterURL),
 		kubectlOperator: kubectl.NewOperator(nil, factory.KubernetesSharedInformerFactory().Apps().V1().Deployments(),
 			factory.KubernetesSharedInformerFactory().Core().V1().Pods(),
 			factory.KubeSphereSharedInformerFactory().Iam().V1alpha2().Users(), ""),
@@ -211,132 +202,80 @@ func (r *resourceHandler) handleGetStatefulSetRevision(request *restful.Request,
 }
 
 // Get ingress controller service for specified namespace
-func (r *resourceHandler) handleGetRouter(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	router, err := r.routerOperator.GetRouter(namespace)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			response.WriteHeaderAndEntity(http.StatusNotFound, errors.Wrap(err))
-		} else {
-			api.HandleInternalError(response, nil, err)
-		}
-		return
-	}
-
-	response.WriteAsJson(router)
-}
+//func (r *resourceHandler) handleGetRouter(request *restful.Request, response *restful.Response) {
+//	namespace := request.PathParameter("namespace")
+//	router, err := r.routerOperator.GetRouter(namespace)
+//	if err != nil {
+//		if k8serr.IsNotFound(err) {
+//			response.WriteHeaderAndEntity(http.StatusNotFound, errors.Wrap(err))
+//		} else {
+//			api.HandleInternalError(response, nil, err)
+//		}
+//		return
+//	}
+//
+//	response.WriteAsJson(router)
+//}
 
 // Create ingress controller and related services
-func (r *resourceHandler) handleCreateRouter(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	newRouter := api.Router{}
-	err := request.ReadEntity(&newRouter)
-	if err != nil {
-		response.WriteHeaderAndEntity(http.StatusBadRequest, errors.Wrap(fmt.Errorf("wrong annotations, missing key or value")))
-		return
-	}
-
-	routerType := v1.ServiceTypeNodePort
-	if strings.Compare(strings.ToLower(newRouter.RouterType), "loadbalancer") == 0 {
-		routerType = v1.ServiceTypeLoadBalancer
-	}
-
-	router, err := r.routerOperator.CreateRouter(namespace, routerType, newRouter.Annotations)
-	if err != nil {
-		api.HandleInternalError(response, nil, err)
-		return
-	}
-
-	response.WriteAsJson(router)
-}
+//func (r *resourceHandler) handleCreateRouter(request *restful.Request, response *restful.Response) {
+//	namespace := request.PathParameter("namespace")
+//	newRouter := api.Router{}
+//	err := request.ReadEntity(&newRouter)
+//	if err != nil {
+//		response.WriteHeaderAndEntity(http.StatusBadRequest, errors.Wrap(fmt.Errorf("wrong annotations, missing key or value")))
+//		return
+//	}
+//
+//	routerType := v1.ServiceTypeNodePort
+//	if strings.Compare(strings.ToLower(newRouter.RouterType), "loadbalancer") == 0 {
+//		routerType = v1.ServiceTypeLoadBalancer
+//	}
+//
+//	router, err := r.routerOperator.CreateRouter(namespace, routerType, newRouter.Annotations)
+//	if err != nil {
+//		api.HandleInternalError(response, nil, err)
+//		return
+//	}
+//
+//	response.WriteAsJson(router)
+//}
 
 // Delete ingress controller and services
-func (r *resourceHandler) handleDeleteRouter(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-
-	router, err := r.routerOperator.DeleteRouter(namespace)
-	if err != nil {
-		api.HandleInternalError(response, nil, err)
-		return
-	}
-
-	response.WriteAsJson(router)
-}
-
-func (r *resourceHandler) handleUpdateRouter(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	newRouter := api.Router{}
-	err := request.ReadEntity(&newRouter)
-	if err != nil {
-		response.WriteHeaderAndEntity(http.StatusBadRequest, errors.Wrap(err))
-		return
-	}
-
-	var routerType = v1.ServiceTypeNodePort
-	if strings.Compare(strings.ToLower(newRouter.RouterType), "loadbalancer") == 0 {
-		routerType = v1.ServiceTypeLoadBalancer
-	}
-	router, err := r.routerOperator.UpdateRouter(namespace, routerType, newRouter.Annotations)
-
-	if err != nil {
-		api.HandleInternalError(response, nil, err)
-		return
-	}
-
-	response.WriteAsJson(router)
-}
-
-func (r *resourceHandler) handleVerifyGitCredential(request *restful.Request, response *restful.Response) {
-	var credential api.GitCredential
-	err := request.ReadEntity(&credential)
-	if err != nil {
-		response.WriteHeaderAndEntity(http.StatusInternalServerError, errors.Wrap(err))
-		return
-	}
-	var namespace, secretName string
-	if credential.SecretRef != nil {
-		namespace = credential.SecretRef.Namespace
-		secretName = credential.SecretRef.Name
-	}
-	err = r.gitVerifier.VerifyGitCredential(credential.RemoteUrl, namespace, secretName)
-	if err != nil {
-		response.WriteHeaderAndEntity(http.StatusInternalServerError, errors.Wrap(err))
-		return
-	}
-	response.WriteAsJson(errors.None)
-}
-
-func (r *resourceHandler) handleVerifyRegistryCredential(request *restful.Request, response *restful.Response) {
-	var credential api.RegistryCredential
-	err := request.ReadEntity(&credential)
-	if err != nil {
-		api.HandleBadRequest(response, nil, err)
-		return
-	}
-
-	err = r.registryGetter.VerifyRegistryCredential(credential)
-	if err != nil {
-		api.HandleBadRequest(response, nil, err)
-		return
-	}
-
-	response.WriteHeader(http.StatusOK)
-}
-
-func (r *resourceHandler) handleGetRegistryEntry(request *restful.Request, response *restful.Response) {
-	imageName := request.QueryParameter("image")
-	namespace := request.QueryParameter("namespace")
-	secretName := request.QueryParameter("secret")
-	insecure := request.QueryParameter("insecure") == "true"
-
-	detail, err := r.registryGetter.GetEntry(namespace, secretName, imageName, insecure)
-	if err != nil {
-		api.HandleBadRequest(response, nil, err)
-		return
-	}
-
-	response.WriteAsJson(detail)
-}
+//func (r *resourceHandler) handleDeleteRouter(request *restful.Request, response *restful.Response) {
+//	namespace := request.PathParameter("namespace")
+//
+//	router, err := r.routerOperator.DeleteRouter(namespace)
+//	if err != nil {
+//		api.HandleInternalError(response, nil, err)
+//		return
+//	}
+//
+//	response.WriteAsJson(router)
+//}
+//
+//func (r *resourceHandler) handleUpdateRouter(request *restful.Request, response *restful.Response) {
+//	namespace := request.PathParameter("namespace")
+//	newRouter := api.Router{}
+//	err := request.ReadEntity(&newRouter)
+//	if err != nil {
+//		response.WriteHeaderAndEntity(http.StatusBadRequest, errors.Wrap(err))
+//		return
+//	}
+//
+//	var routerType = v1.ServiceTypeNodePort
+//	if strings.Compare(strings.ToLower(newRouter.RouterType), "loadbalancer") == 0 {
+//		routerType = v1.ServiceTypeLoadBalancer
+//	}
+//	router, err := r.routerOperator.UpdateRouter(namespace, routerType, newRouter.Annotations)
+//
+//	if err != nil {
+//		api.HandleInternalError(response, nil, err)
+//		return
+//	}
+//
+//	response.WriteAsJson(router)
+//}
 
 func (r *resourceHandler) handleGetNamespacedAbnormalWorkloads(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")

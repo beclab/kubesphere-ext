@@ -28,20 +28,12 @@ type Interface interface {
 	GlobalRoles() GlobalRoleInformer
 	// GlobalRoleBindings returns a GlobalRoleBindingInformer.
 	GlobalRoleBindings() GlobalRoleBindingInformer
-	// Groups returns a GroupInformer.
-	Groups() GroupInformer
-	// GroupBindings returns a GroupBindingInformer.
-	GroupBindings() GroupBindingInformer
-	// LoginRecords returns a LoginRecordInformer.
-	LoginRecords() LoginRecordInformer
 	// RoleBases returns a RoleBaseInformer.
 	RoleBases() RoleBaseInformer
+	// Syncs returns a SyncInformer.
+	Syncs() SyncInformer
 	// Users returns a UserInformer.
 	Users() UserInformer
-	// WorkspaceRoles returns a WorkspaceRoleInformer.
-	WorkspaceRoles() WorkspaceRoleInformer
-	// WorkspaceRoleBindings returns a WorkspaceRoleBindingInformer.
-	WorkspaceRoleBindings() WorkspaceRoleBindingInformer
 }
 
 type version struct {
@@ -65,37 +57,17 @@ func (v *version) GlobalRoleBindings() GlobalRoleBindingInformer {
 	return &globalRoleBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
-// Groups returns a GroupInformer.
-func (v *version) Groups() GroupInformer {
-	return &groupInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// GroupBindings returns a GroupBindingInformer.
-func (v *version) GroupBindings() GroupBindingInformer {
-	return &groupBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// LoginRecords returns a LoginRecordInformer.
-func (v *version) LoginRecords() LoginRecordInformer {
-	return &loginRecordInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
 // RoleBases returns a RoleBaseInformer.
 func (v *version) RoleBases() RoleBaseInformer {
 	return &roleBaseInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// Syncs returns a SyncInformer.
+func (v *version) Syncs() SyncInformer {
+	return &syncInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // Users returns a UserInformer.
 func (v *version) Users() UserInformer {
 	return &userInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// WorkspaceRoles returns a WorkspaceRoleInformer.
-func (v *version) WorkspaceRoles() WorkspaceRoleInformer {
-	return &workspaceRoleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// WorkspaceRoleBindings returns a WorkspaceRoleBindingInformer.
-func (v *version) WorkspaceRoleBindings() WorkspaceRoleBindingInformer {
-	return &workspaceRoleBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

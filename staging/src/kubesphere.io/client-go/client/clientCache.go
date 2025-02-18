@@ -143,7 +143,7 @@ func (r *ResourceMeta) IsNamespaced() bool {
 
 }
 
-// resource returns the resource name of the type
+// Resource returns the resource name of the type
 func (r *ResourceMeta) Resource() string {
 	return r.mapping.Resource.Resource
 }

@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	tenantv1alpha1 "kubesphere.io/api/tenant/v1alpha1"
-	tenantv1alpha2 "kubesphere.io/api/tenant/v1alpha2"
 )
 
 // IsControlledBy returns whether the ownerReferences contains the specified resource kind
@@ -33,29 +30,6 @@ func IsControlledBy(ownerReferences []metav1.OwnerReference, kind string, name s
 		}
 	}
 	return false
-}
-
-// RemoveWorkspaceOwnerReference remove workspace kind owner reference
-func RemoveWorkspaceOwnerReference(ownerReferences []metav1.OwnerReference) []metav1.OwnerReference {
-	tmp := make([]metav1.OwnerReference, 0)
-	for _, owner := range ownerReferences {
-		if owner.Kind != tenantv1alpha1.ResourceKindWorkspace &&
-			owner.Kind != tenantv1alpha2.ResourceKindWorkspaceTemplate {
-			tmp = append(tmp, owner)
-		}
-	}
-	return tmp
-}
-
-// GetWorkspaceOwnerName return workspace kind owner name
-func GetWorkspaceOwnerName(ownerReferences []metav1.OwnerReference) string {
-	for _, owner := range ownerReferences {
-		if owner.Kind == tenantv1alpha1.ResourceKindWorkspace ||
-			owner.Kind == tenantv1alpha2.ResourceKindWorkspaceTemplate {
-			return owner.Name
-		}
-	}
-	return ""
 }
 
 // LoadKubeConfigFromBytes parses the kubeconfig yaml data to the rest.Config struct.

@@ -21,30 +21,23 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gops/agent"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
 	"kubesphere.io/kubesphere/cmd/controller-manager/app/options"
 	"kubesphere.io/kubesphere/pkg/apis"
 	controllerconfig "kubesphere.io/kubesphere/pkg/apiserver/config"
-	"kubesphere.io/kubesphere/pkg/controller/network/webhooks"
-	"kubesphere.io/kubesphere/pkg/controller/quota"
-	"kubesphere.io/kubesphere/pkg/controller/user"
 	"kubesphere.io/kubesphere/pkg/informers"
 	"kubesphere.io/kubesphere/pkg/simple/client/k8s"
-	"kubesphere.io/kubesphere/pkg/simple/client/s3"
 	"kubesphere.io/kubesphere/pkg/utils/metrics"
 	"kubesphere.io/kubesphere/pkg/utils/term"
 	"kubesphere.io/kubesphere/pkg/version"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 func NewControllerManagerCommand() *cobra.Command {
@@ -53,20 +46,11 @@ func NewControllerManagerCommand() *cobra.Command {
 	if err == nil {
 		// make sure LeaderElection is not nil
 		s = &options.KubeSphereControllerManagerOptions{
-			KubernetesOptions:     conf.KubernetesOptions,
-			DevopsOptions:         conf.DevopsOptions,
-			S3Options:             conf.S3Options,
-			AuthenticationOptions: conf.AuthenticationOptions,
-			LdapOptions:           conf.LdapOptions,
-			OpenPitrixOptions:     conf.OpenPitrixOptions,
-			NetworkOptions:        conf.NetworkOptions,
-			MultiClusterOptions:   conf.MultiClusterOptions,
-			ServiceMeshOptions:    conf.ServiceMeshOptions,
-			GatewayOptions:        conf.GatewayOptions,
-			MonitoringOptions:     conf.MonitoringOptions,
-			LeaderElection:        s.LeaderElection,
-			LeaderElect:           s.LeaderElect,
-			WebhookCertDir:        s.WebhookCertDir,
+			KubernetesOptions: conf.KubernetesOptions,
+			MonitoringOptions: conf.MonitoringOptions,
+			LeaderElection:    s.LeaderElection,
+			LeaderElect:       s.LeaderElect,
+			WebhookCertDir:    s.WebhookCertDir,
 		}
 	} else {
 		klog.Fatal("Failed to load configuration from disk", err)
@@ -79,14 +63,6 @@ func NewControllerManagerCommand() *cobra.Command {
 			if errs := s.Validate(allControllers); len(errs) != 0 {
 				klog.Error(utilerrors.NewAggregate(errs))
 				os.Exit(1)
-			}
-
-			if s.GOPSEnabled {
-				// Add agent to report additional information such as the current stack trace, Go version, memory stats, etc.
-				// Bind to a random port on address 127.0.0.1
-				if err := agent.Listen(agent.Options{}); err != nil {
-					klog.Fatal(err)
-				}
 			}
 
 			if err = Run(s, controllerconfig.WatchConfigChange(), signals.SetupSignalHandler()); err != nil {
@@ -166,13 +142,6 @@ func run(s *options.KubeSphereControllerManagerOptions, ctx context.Context) err
 		return err
 	}
 
-	if s.S3Options != nil && len(s.S3Options.Endpoint) != 0 {
-		_, err = s3.NewS3Client(s.S3Options)
-		if err != nil {
-			return fmt.Errorf("failed to connect to s3, please check s3 service status, error: %v", err)
-		}
-	}
-
 	informerFactory := informers.NewInformerFactories(
 		kubernetesClient.Kubernetes(),
 		kubernetesClient.KubeSphere(),
@@ -227,22 +196,6 @@ func run(s *options.KubeSphereControllerManagerOptions, ctx context.Context) err
 	// Start cache data after all informer is registered
 	klog.V(0).Info("Starting cache resource from apiserver...")
 	informerFactory.Start(ctx.Done())
-
-	// Setup webhooks
-	klog.V(2).Info("setting up webhook server")
-	hookServer := mgr.GetWebhookServer()
-
-	klog.V(2).Info("registering webhooks to the webhook server")
-	hookServer.Register("/validate-email-iam-kubesphere-io-v1alpha2", &webhook.Admission{Handler: &user.EmailValidator{Client: mgr.GetClient()}})
-	hookServer.Register("/validate-network-kubesphere-io-v1alpha1", &webhook.Admission{Handler: &webhooks.ValidatingHandler{C: mgr.GetClient()}})
-	hookServer.Register("/mutate-network-kubesphere-io-v1alpha1", &webhook.Admission{Handler: &webhooks.MutatingHandler{C: mgr.GetClient()}})
-	hookServer.Register("/persistentvolumeclaims", &webhook.Admission{Handler: &webhooks.AccessorHandler{C: mgr.GetClient()}})
-
-	resourceQuotaAdmission, err := quota.NewResourceQuotaAdmission(mgr.GetClient(), mgr.GetScheme())
-	if err != nil {
-		klog.Fatalf("unable to create resource quota admission: %v", err)
-	}
-	hookServer.Register("/validate-quota-kubesphere-io-v1alpha2", &webhook.Admission{Handler: resourceQuotaAdmission})
 
 	klog.V(2).Info("registering metrics to the webhook server")
 	// Add an extra metric endpoint, so we can use the the same metric definition with ks-apiserver

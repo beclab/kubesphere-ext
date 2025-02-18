@@ -51,13 +51,17 @@ func (d *globalrolesGetter) List(_ string, query *query.Query) (*api.ListResult,
 	if aggregateTo := query.Filters[iamv1alpha2.AggregateTo]; aggregateTo != "" {
 		roles, err = d.fetchAggregationRoles(string(aggregateTo))
 		delete(query.Filters, iamv1alpha2.AggregateTo)
+		klog.V(0).Infof("globalrole list 1")
 	} else {
 		roles, err = d.sharedInformers.Iam().V1alpha2().GlobalRoles().Lister().List(query.Selector())
+		klog.V(0).Infof("globalrole list 2: %v", query.Selector().String())
+
 	}
 
 	if err != nil {
 		return nil, err
 	}
+	klog.V(0).Infof("len(roles): %d", len(roles))
 
 	var result []runtime.Object
 	for _, role := range roles {

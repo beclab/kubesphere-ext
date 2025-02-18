@@ -35,9 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	k8srequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/klog"
-
-	"kubesphere.io/kubesphere/pkg/api"
-	"kubesphere.io/kubesphere/pkg/constants"
 )
 
 type RequestInfoResolver interface {
@@ -65,15 +62,6 @@ type RequestInfo struct {
 
 	// IsKubernetesRequest indicates whether or not the request should be handled by kubernetes or kubesphere
 	IsKubernetesRequest bool
-
-	// Workspace of requested resource, for non-workspaced resources, this may be empty
-	Workspace string
-
-	// Cluster of requested resource, this is empty in single-cluster environment
-	Cluster string
-
-	// DevOps project of requested resource
-	DevOps string
 
 	// Scope of requested resource.
 	ResourceScope string
@@ -126,8 +114,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 			Path: req.URL.Path,
 			Verb: req.Method,
 		},
-		Workspace: api.WorkspaceNone,
-		Cluster:   api.ClusterNone,
 		SourceIP:  iputil.RemoteIp(req),
 		UserAgent: req.UserAgent(),
 	}
@@ -157,16 +143,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 	}
 	requestInfo.APIPrefix = currentParts[0]
 	currentParts = currentParts[1:]
-
-	// URL forms: /clusters/{cluster}/*
-	if currentParts[0] == "clusters" {
-		if len(currentParts) > 1 {
-			requestInfo.Cluster = currentParts[1]
-		}
-		if len(currentParts) > 2 {
-			currentParts = currentParts[2:]
-		}
-	}
 
 	if !r.GrouplessAPIPrefixes.Has(requestInfo.APIPrefix) {
 		// one part (APIPrefix) has already been consumed, so this is actually "do we have four parts?"
@@ -207,16 +183,6 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 		}
 	}
 
-	// URL forms: /workspaces/{workspace}/*
-	if currentParts[0] == "workspaces" {
-		if len(currentParts) > 1 {
-			requestInfo.Workspace = currentParts[1]
-		}
-		if len(currentParts) > 2 {
-			currentParts = currentParts[2:]
-		}
-	}
-
 	// URL forms: /namespaces/{namespace}/{kind}/*, where parts are adjusted to be relative to kind
 	if currentParts[0] == "namespaces" {
 		if len(currentParts) > 1 {
@@ -228,19 +194,8 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 				currentParts = currentParts[2:]
 			}
 		}
-	} else if currentParts[0] == "devops" {
-		if len(currentParts) > 1 {
-			requestInfo.DevOps = currentParts[1]
-
-			// if there is another step after the devops name
-			// move currentParts to include it as a resource in its own right
-			if len(currentParts) > 2 {
-				currentParts = currentParts[2:]
-			}
-		}
 	} else {
 		requestInfo.Namespace = metav1.NamespaceNone
-		requestInfo.DevOps = metav1.NamespaceNone
 	}
 
 	// parsing successful, so we now know the proper value for .Parts
@@ -294,14 +249,14 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 	}
 
 	// URL forms: /api/v1/watch/namespaces?labelSelector=kubesphere.io/workspace=system-workspace
-	if requestInfo.Verb == "watch" {
-		selector := req.URL.Query().Get("labelSelector")
-		if strings.HasPrefix(selector, workspaceSelectorPrefix) {
-			workspace := strings.TrimPrefix(selector, workspaceSelectorPrefix)
-			requestInfo.Workspace = workspace
-			requestInfo.ResourceScope = WorkspaceScope
-		}
-	}
+	//if requestInfo.Verb == "watch" {
+	//	selector := req.URL.Query().Get("labelSelector")
+	//	if strings.HasPrefix(selector, workspaceSelectorPrefix) {
+	//		workspace := strings.TrimPrefix(selector, workspaceSelectorPrefix)
+	//		requestInfo.Workspace = workspace
+	//		requestInfo.ResourceScope = WorkspaceScope
+	//	}
+	//}
 
 	// if there's no name on the request and we thought it was a delete before, then the actual verb is deletecollection
 	if len(requestInfo.Name) == 0 && requestInfo.Verb == "delete" {
@@ -337,12 +292,9 @@ func splitPath(path string) []string {
 }
 
 const (
-	GlobalScope             = "Global"
-	ClusterScope            = "Cluster"
-	WorkspaceScope          = "Workspace"
-	NamespaceScope          = "Namespace"
-	DevOpsScope             = "DevOps"
-	workspaceSelectorPrefix = constants.WorkspaceLabelKey + "="
+	GlobalScope    = "Global"
+	ClusterScope   = "Cluster"
+	NamespaceScope = "Namespace"
 )
 
 func (r *RequestInfoFactory) resolveResourceScope(request RequestInfo) string {
@@ -352,14 +304,6 @@ func (r *RequestInfoFactory) resolveResourceScope(request RequestInfo) string {
 
 	if request.Namespace != "" {
 		return NamespaceScope
-	}
-
-	if request.DevOps != "" {
-		return DevOpsScope
-	}
-
-	if request.Workspace != "" {
-		return WorkspaceScope
 	}
 
 	return ClusterScope

@@ -22,16 +22,16 @@ import (
 )
 
 type IamV1alpha2Interface interface {
-	GroupsGetter
+	//GroupsGetter
 	RoleBindingsGetter
 }
 type IamV1alpha2Client struct {
 	client *resty.Client
 }
 
-func (c *IamV1alpha2Client) Groups() GroupInterface {
-	return newGroups(c)
-}
+//func (c *IamV1alpha2Client) Groups() GroupInterface {
+//	return newGroups(c)
+//}
 
 func (c *IamV1alpha2Client) RoleBindings() RoleBindingInterface {
 	return newRoleBindings(c)

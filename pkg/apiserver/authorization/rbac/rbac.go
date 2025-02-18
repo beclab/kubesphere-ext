@@ -22,16 +22,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"k8s.io/apiserver/pkg/authentication/serviceaccount"
+	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
+	"kubesphere.io/kubesphere/pkg/utils/sliceutil"
 
 	"github.com/open-policy-agent/opa/rego"
-	"k8s.io/apiserver/pkg/authentication/serviceaccount"
-
-	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
-
 	"kubesphere.io/kubesphere/pkg/apiserver/authorization/authorizer"
 	"kubesphere.io/kubesphere/pkg/apiserver/request"
 	"kubesphere.io/kubesphere/pkg/models/iam/am"
-	"kubesphere.io/kubesphere/pkg/utils/sliceutil"
 
 	"k8s.io/klog"
 
@@ -92,6 +90,7 @@ func (r *ruleAccumulator) visit(_ fmt.Stringer, _ string, rule *rbacv1.PolicyRul
 
 func (r *RBACAuthorizer) Authorize(requestAttributes authorizer.Attributes) (authorizer.Decision, string, error) {
 	ruleCheckingVisitor := &authorizingVisitor{requestAttributes: requestAttributes}
+	klog.V(0).Infof("enter rbac authorize")
 
 	r.visitRulesFor(requestAttributes, ruleCheckingVisitor.visit)
 
@@ -204,11 +203,13 @@ func (r *RBACAuthorizer) rulesFor(requestAttributes authorizer.Attributes) ([]rb
 func (r *RBACAuthorizer) visitRulesFor(requestAttributes authorizer.Attributes, visitor func(source fmt.Stringer, regoPolicy string, rule *rbacv1.PolicyRule, err error) bool) {
 
 	if globalRoleBindings, err := r.am.ListGlobalRoleBindings(""); err != nil {
+		klog.V(0).Infof("ListGlobalRoleBindings: err=%v", err)
 		if !visitor(nil, "", nil, err) {
 			return
 		}
 	} else {
 		sourceDescriber := &globalRoleBindingDescriber{}
+		klog.V(0).Infof("globalRoleBindings:len: %d", len(globalRoleBindings))
 		for _, globalRoleBinding := range globalRoleBindings {
 			subjectIndex, applies := appliesTo(requestAttributes.GetUser(), globalRoleBinding.Subjects, "")
 			if !applies {
@@ -233,135 +234,6 @@ func (r *RBACAuthorizer) visitRulesFor(requestAttributes authorizer.Attributes, 
 
 		if requestAttributes.GetResourceScope() == request.GlobalScope {
 			return
-		}
-	}
-
-	if requestAttributes.GetResourceScope() == request.WorkspaceScope ||
-		requestAttributes.GetResourceScope() == request.NamespaceScope ||
-		requestAttributes.GetResourceScope() == request.DevOpsScope {
-
-		var workspace string
-		var err error
-		// all of resource under namespace and devops belong to workspace
-		if requestAttributes.GetResourceScope() == request.NamespaceScope {
-			if workspace, err = r.am.GetNamespaceControlledWorkspace(requestAttributes.GetNamespace()); err != nil {
-				if !visitor(nil, "", nil, err) {
-					return
-				}
-			}
-		} else if requestAttributes.GetResourceScope() == request.DevOpsScope {
-			if workspace, err = r.am.GetDevOpsControlledWorkspace(requestAttributes.GetDevOps()); err != nil {
-				if !visitor(nil, "", nil, err) {
-					return
-				}
-			}
-		}
-
-		if workspace == "" {
-			workspace = requestAttributes.GetWorkspace()
-		}
-
-		if workspaceRoleBindings, err := r.am.ListWorkspaceRoleBindings("", nil, workspace); err != nil {
-			if !visitor(nil, "", nil, err) {
-				return
-			}
-		} else {
-			sourceDescriber := &workspaceRoleBindingDescriber{}
-			for _, workspaceRoleBinding := range workspaceRoleBindings {
-				subjectIndex, applies := appliesTo(requestAttributes.GetUser(), workspaceRoleBinding.Subjects, "")
-				if !applies {
-					continue
-				}
-				regoPolicy, rules, err := r.am.GetRoleReferenceRules(workspaceRoleBinding.RoleRef, "")
-				if err != nil {
-					visitor(nil, "", nil, err)
-					continue
-				}
-				sourceDescriber.binding = workspaceRoleBinding
-				sourceDescriber.subject = &workspaceRoleBinding.Subjects[subjectIndex]
-				if !visitor(sourceDescriber, regoPolicy, nil, nil) {
-					return
-				}
-				for i := range rules {
-					if !visitor(sourceDescriber, "", &rules[i], nil) {
-						return
-					}
-				}
-			}
-		}
-	}
-
-	if requestAttributes.GetResourceScope() == request.NamespaceScope ||
-		requestAttributes.GetResourceScope() == request.DevOpsScope {
-
-		namespace := requestAttributes.GetNamespace()
-		// list devops role binding
-		if requestAttributes.GetResourceScope() == request.DevOpsScope {
-			if relatedNamespace, err := r.am.GetDevOpsRelatedNamespace(requestAttributes.GetDevOps()); err != nil {
-				if !visitor(nil, "", nil, err) {
-					return
-				}
-			} else {
-				namespace = relatedNamespace
-			}
-		}
-
-		if roleBindings, err := r.am.ListRoleBindings("", nil, namespace); err != nil {
-			if !visitor(nil, "", nil, err) {
-				return
-			}
-		} else {
-			sourceDescriber := &roleBindingDescriber{}
-			for _, roleBinding := range roleBindings {
-				subjectIndex, applies := appliesTo(requestAttributes.GetUser(), roleBinding.Subjects, namespace)
-				if !applies {
-					continue
-				}
-				regoPolicy, rules, err := r.am.GetRoleReferenceRules(roleBinding.RoleRef, namespace)
-				if err != nil {
-					visitor(nil, "", nil, err)
-					continue
-				}
-				sourceDescriber.binding = roleBinding
-				sourceDescriber.subject = &roleBinding.Subjects[subjectIndex]
-				if !visitor(sourceDescriber, regoPolicy, nil, nil) {
-					return
-				}
-				for i := range rules {
-					if !visitor(sourceDescriber, "", &rules[i], nil) {
-						return
-					}
-				}
-			}
-		}
-	}
-
-	if clusterRoleBindings, err := r.am.ListClusterRoleBindings(""); err != nil {
-		if !visitor(nil, "", nil, err) {
-			return
-		}
-	} else {
-		sourceDescriber := &clusterRoleBindingDescriber{}
-		for _, clusterRoleBinding := range clusterRoleBindings {
-			subjectIndex, applies := appliesTo(requestAttributes.GetUser(), clusterRoleBinding.Subjects, "")
-			if !applies {
-				continue
-			}
-			regoPolicy, rules, err := r.am.GetRoleReferenceRules(clusterRoleBinding.RoleRef, "")
-			if err != nil {
-				visitor(nil, "", nil, err)
-				continue
-			}
-			sourceDescriber.binding = clusterRoleBinding
-			sourceDescriber.subject = &clusterRoleBinding.Subjects[subjectIndex]
-			if !visitor(sourceDescriber, regoPolicy, nil, nil) {
-				return
-			}
-			for i := range rules {
-				if !visitor(sourceDescriber, "", &rules[i], nil) {
-					return
-				}
-			}
 		}
 	}
 }
@@ -402,20 +274,6 @@ func appliesToUser(user user.Info, subject rbacv1.Subject, namespace string) boo
 	}
 }
 
-type globalRoleBindingDescriber struct {
-	binding *iamv1alpha2.GlobalRoleBinding
-	subject *rbacv1.Subject
-}
-
-func (d *globalRoleBindingDescriber) String() string {
-	return fmt.Sprintf("GlobalRoleBinding %q of %s %q to %s",
-		d.binding.Name,
-		d.binding.RoleRef.Kind,
-		d.binding.RoleRef.Name,
-		describeSubject(d.subject, ""),
-	)
-}
-
 type clusterRoleBindingDescriber struct {
 	binding *rbacv1.ClusterRoleBinding
 	subject *rbacv1.Subject
@@ -423,20 +281,6 @@ type clusterRoleBindingDescriber struct {
 
 func (d *clusterRoleBindingDescriber) String() string {
 	return fmt.Sprintf("ClusterRoleBinding %q of %s %q to %s",
-		d.binding.Name,
-		d.binding.RoleRef.Kind,
-		d.binding.RoleRef.Name,
-		describeSubject(d.subject, ""),
-	)
-}
-
-type workspaceRoleBindingDescriber struct {
-	binding *iamv1alpha2.WorkspaceRoleBinding
-	subject *rbacv1.Subject
-}
-
-func (d *workspaceRoleBindingDescriber) String() string {
-	return fmt.Sprintf("GlobalRoleBinding %q of %s %q to %s",
 		d.binding.Name,
 		d.binding.RoleRef.Kind,
 		d.binding.RoleRef.Name,
@@ -468,4 +312,18 @@ func describeSubject(s *rbacv1.Subject, bindingNamespace string) string {
 	default:
 		return fmt.Sprintf("%s %q", s.Kind, s.Name)
 	}
+}
+
+type globalRoleBindingDescriber struct {
+	binding *iamv1alpha2.GlobalRoleBinding
+	subject *rbacv1.Subject
+}
+
+func (d *globalRoleBindingDescriber) String() string {
+	return fmt.Sprintf("GlobalRoleBinding %q of %s %q to %s",
+		d.binding.Name,
+		d.binding.RoleRef.Kind,
+		d.binding.RoleRef.Name,
+		describeSubject(d.subject, ""),
+	)
 }
