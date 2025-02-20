@@ -72,7 +72,7 @@ func NewOptions() *Options {
 		OAuthOptions:                    oauth.NewOptions(),
 		MultipleLogin:                   false,
 		JwtSecret:                       "",
-		KubectlImage:                    "kubesphere/kubectl:v1.0.0",
+		KubectlImage:                    "kubesphere/kubectl:v1.22.0",
 	}
 }
 

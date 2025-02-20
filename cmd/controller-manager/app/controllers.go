@@ -80,7 +80,7 @@ func addAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 			kubernetesInformer.Apps().V1().Deployments(),
 			kubernetesInformer.Core().V1().Pods(),
 			kubesphereInformer.Iam().V1alpha2().Users(),
-			"kubesphere/kubectl:v1.0.0")
+			"kubesphere/kubectl:v1.22.0")
 		addController(mgr, "globalrolebinding", globalRoleBindingController)
 	}
 	// log all controllers process result
