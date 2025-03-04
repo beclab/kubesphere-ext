@@ -185,7 +185,7 @@ func NewNodeTerminaler(nodename string, options *Options, client kubernetes.Inte
 		ContainerName: "nsenter",
 		Nodename:      nodename,
 		PodName:       nodename + "-shell-access",
-		Shell:         "sh",
+		Shell:         "bash",
 		Privileged:    true,
 		Config:        options,
 		client:        client,
