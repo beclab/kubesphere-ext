@@ -36,7 +36,6 @@ import (
 // WithAuthorization passes all authorized requests on to handler, and returns forbidden error otherwise.
 func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) http.Handler {
 	if authorizers == nil {
-		klog.V(0).Infof("Authorization is disabled")
 		return handler
 	}
 
@@ -49,8 +48,6 @@ func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) 
 		if err != nil {
 			responsewriters.InternalError(w, req, err)
 		}
-		klog.V(0).Infof("userinfo.username: %v", attributes.GetUser())
-		klog.V(0).Infof("userinfo.path: %v", attributes.GetPath())
 
 		authorized, reason, err := authorizers.Authorize(attributes)
 		if authorized == authorizer.DecisionAllow {
@@ -63,7 +60,6 @@ func WithAuthorization(handler http.Handler, authorizers authorizer.Authorizer) 
 			return
 		}
 
-		klog.V(0).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
 		responsewriters.Forbidden(ctx, attributes, w, req, reason, defaultSerializer)
 	})
 }
@@ -129,8 +125,6 @@ func WithAuthentication(handler http.Handler, authRequest authenticator.Request)
 			responsewriters.ErrorNegotiated(apierrors.NewUnauthorized(fmt.Sprintf("Unauthorized: %s", err)), s, gv, w, req)
 			return
 		}
-
-		klog.V(0).Infof("userInfo: %#v", resp.User)
 
 		req = req.WithContext(request.WithUser(req.Context(), resp.User))
 		handler.ServeHTTP(w, req)

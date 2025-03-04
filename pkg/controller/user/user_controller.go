@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/beclab/lldap-client/pkg/cache/memory"
+	lclient "github.com/beclab/lldap-client/pkg/client"
 	lconfig "github.com/beclab/lldap-client/pkg/config"
 	lapierrors "github.com/beclab/lldap-client/pkg/errors"
 	"github.com/beclab/lldap-client/pkg/generated"
@@ -30,20 +31,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
+	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
-	"kubesphere.io/kubesphere/pkg/constants"
 	"kubesphere.io/kubesphere/pkg/models/kubeconfig"
 	"kubesphere.io/kubesphere/pkg/utils/sliceutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strconv"
-	"time"
 
-	lclient "github.com/beclab/lldap-client/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"time"
 )
 
 const (
@@ -62,6 +62,8 @@ const (
 	regularGroup       = "lldap_regular"
 
 	globalAdmin = "iam.kubesphere.io/globalrole"
+	interval    = time.Second
+	timeout     = 15 * time.Second
 )
 
 // Reconciler reconciles a User object
@@ -108,44 +110,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	klog.V(0).Infof("name=%s, user1: %v", user.Name, user.Spec.InitialPassword)
-	if user.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object.
-		if !sliceutil.HasString(user.Finalizers, finalizer) {
-			user.ObjectMeta.Finalizers = append(user.ObjectMeta.Finalizers, finalizer)
-			klog.V(0).Infof("name=%s,user2: %v", user.Name, user.Spec.InitialPassword)
-
-			if err = r.Update(ctx, user, &client.UpdateOptions{}); err != nil {
-				logger.Error(err, "failed to update user")
-				return ctrl.Result{}, err
-			}
-		}
-	} else {
-		// The object is being deleted
-		if sliceutil.HasString(user.ObjectMeta.Finalizers, finalizer) {
-
-			if err = r.deleteRoleBindings(ctx, user); err != nil {
-				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
-				return ctrl.Result{}, err
-			}
-
-			// remove our finalizer from the list and update it.
-			user.Finalizers = sliceutil.RemoveString(user.ObjectMeta.Finalizers, func(item string) bool {
-				return item == finalizer
-			})
-			klog.V(0).Infof("name=%s,user3: %v", user.Name, user.Spec.InitialPassword)
-
-			if err = r.Update(ctx, user, &client.UpdateOptions{}); err != nil {
-				klog.Error(err)
-				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
-				return ctrl.Result{}, err
-			}
-		}
-
-		// Our finalizer has finished, so the reconciler can do nothing.
-		return ctrl.Result{}, err
-	}
 	if r.LLdapClient == nil {
 		bindUsername, err := r.getCredentialVal(ctx, "lldap-ldap-user-dn")
 		if err != nil {
@@ -168,66 +132,56 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		}
 		r.LLdapClient = lldapClient
 	}
+	klog.V(0).Infof("name=%s, user1: %v", user.Name, user.Spec.InitialPassword)
+	if user.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object.
+		if !sliceutil.HasString(user.Finalizers, finalizer) {
+			user.ObjectMeta.Finalizers = append(user.ObjectMeta.Finalizers, finalizer)
+			klog.V(0).Infof("name=%s,user2: %v", user.Name, user.Spec.InitialPassword)
 
-	// sync user with label "iam.kubesphere.io/sync-to-lldap": true and "iam.kubesphere.io/synced-to-lldap": false
-	ana := user.Annotations
-
-	isNeedSyncToLLDap, _ := strconv.ParseBool(ana[needSyncToLLdapAna])
-	synced, _ := strconv.ParseBool(ana[syncedToLLdapAna])
-	klog.V(0).Infof("isNeedSyncToLLDap: %v,synced: %v", isNeedSyncToLLDap, synced)
-	if isNeedSyncToLLDap && !synced {
-		klog.V(0).Infof("sync user from ks to lldap")
-		var sync iamv1alpha2.Sync
-		key := types.NamespacedName{Name: "lldap"}
-		err = r.Get(ctx, key, &sync)
-		klog.V(0).Infof("sync user to lldap: %v", err)
-		if err == nil {
-			u := generated.CreateUserInput{
-				Id:          user.Name,
-				Email:       user.Spec.Email,
-				DisplayName: user.Name,
-			}
-			klog.V(0).Infof("create username:%s,password:%s", user.Name, user.Spec.InitialPassword)
-			_, err = r.LLdapClient.Users().Create(ctx, &u, user.Spec.InitialPassword)
-			if err != nil {
-				klog.V(0).Infof("create lldap user err=%v", err)
-				if lapierrors.IsAlreadyExists(err) {
-					klog.V(0).Infof("", err)
-				} else {
-					return ctrl.Result{}, err
-				}
-			}
-			//if ana[globalAdmin] == "true"
-			lldapGroupID := 1
-			if isAdmin, _ := strconv.ParseBool(ana[globalAdmin]); !isAdmin {
-				g, err := r.LLdapClient.Groups().GetByName(ctx, regularGroup)
-				if err != nil {
-					// lldap_regular group will always exists ensure by lldap
-					return ctrl.Result{}, err
-				}
-				lldapGroupID = g.Id
-
-			}
-			err = r.LLdapClient.Groups().AddUser(ctx, user.Name, lldapGroupID)
-			if err != nil {
-				klog.V(0).Infof("add user to group err=%v", err)
-				if lapierrors.IsAlreadyExists(err) {
-					klog.V(0).Infof("", err)
-				} else {
-					return ctrl.Result{}, err
-				}
-			}
-
-			user.Annotations[syncedToLLdapAna] = "true"
-			user.Labels = make(map[string]string)
-			user.Labels["iam.kubesphere.io/user-provider"] = "lldap"
-			user.Spec.InitialPassword = ""
-			err = r.Update(ctx, user, &client.UpdateOptions{})
-			if err != nil {
-				klog.V(0).Infof("update user....: %v", err)
+			if err = r.Update(ctx, user, &client.UpdateOptions{}); err != nil {
+				logger.Error(err, "failed to update user")
 				return ctrl.Result{}, err
 			}
-			klog.V(0).Infof("successes to sync user %d to lldap", user.Name)
+		}
+	} else {
+		// The object is being deleted
+		if sliceutil.HasString(user.ObjectMeta.Finalizers, finalizer) {
+
+			if r.LLdapClient != nil {
+				if err = r.waitForDeleteFromLLDAP(user.Name); err != nil {
+					// ignore timeout error
+					r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
+					return ctrl.Result{}, err
+				}
+			}
+
+			if err = r.deleteRoleBindings(ctx, user); err != nil {
+				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			user.Finalizers = sliceutil.RemoveString(user.ObjectMeta.Finalizers, func(item string) bool {
+				return item == finalizer
+			})
+			klog.V(0).Infof("name=%s,user3: %v", user.Name, user.Spec.InitialPassword)
+
+			if err = r.Update(ctx, user, &client.UpdateOptions{}); err != nil {
+				klog.Error(err)
+				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Our finalizer has finished, so the reconciler can do nothing.
+		return ctrl.Result{}, err
+	}
+
+	if r.LLdapClient != nil {
+		if err = r.waitForSyncToLLDAP(user); err != nil {
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -243,21 +197,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	r.Recorder.Event(user, corev1.EventTypeNormal, successSynced, messageResourceSynced)
 
 	return ctrl.Result{}, nil
-}
-
-func (r *Reconciler) ensureNotControlledByKubefed(ctx context.Context, user *iamv1alpha2.User) error {
-	if user.Labels[constants.KubefedManagedLabel] != "false" {
-		if user.Labels == nil {
-			user.Labels = make(map[string]string, 0)
-		}
-		user.Labels[constants.KubefedManagedLabel] = "false"
-		err := r.Update(ctx, user, &client.UpdateOptions{})
-		if err != nil {
-			klog.Error(err)
-			return err
-		}
-	}
-	return nil
 }
 
 func (r *Reconciler) deleteRoleBindings(ctx context.Context, user *iamv1alpha2.User) error {
@@ -313,4 +252,70 @@ func (r *Reconciler) getCredentialVal(ctx context.Context, key string) (string, 
 	}
 	return "", fmt.Errorf("can not find credentialval for key %s", key)
 
+}
+
+func (r *Reconciler) waitForDeleteFromLLDAP(username string) error {
+	err := utilwait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		err = r.LLdapClient.Users().Delete(context.TODO(), username)
+		if err != nil && lapierrors.IsNotFound(err) {
+			klog.Error(err)
+			return false, err
+		}
+		return true, nil
+	})
+	return err
+}
+
+func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
+	ana := user.Annotations
+	if ana == nil {
+		return nil
+	}
+	isNeedSyncToLLDap, _ := strconv.ParseBool(ana[needSyncToLLdapAna])
+	synced, _ := strconv.ParseBool(ana[syncedToLLdapAna])
+	if !isNeedSyncToLLDap || synced {
+		return nil
+	}
+
+	err := utilwait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		_, err = r.LLdapClient.Users().Get(context.TODO(), user.Name)
+		if err != nil {
+			if lapierrors.IsNotFound(err) {
+				u := generated.CreateUserInput{
+					Id:          user.Name,
+					Email:       user.Spec.Email,
+					DisplayName: user.Name,
+				}
+				_, err = r.LLdapClient.Users().Create(context.TODO(), &u, user.Spec.InitialPassword)
+				if err != nil && !lapierrors.IsAlreadyExists(err) {
+					return false, err
+				}
+				lldapGroupID := 1
+				if isAdmin, _ := strconv.ParseBool(ana[globalAdmin]); !isAdmin {
+					g, err := r.LLdapClient.Groups().GetByName(context.TODO(), regularGroup)
+					if err != nil {
+						// lldap_regular group will always exists ensure by lldap
+						return false, err
+					}
+					lldapGroupID = g.Id
+				}
+				err = r.LLdapClient.Groups().AddUser(context.TODO(), user.Name, lldapGroupID)
+				if err != nil && !lapierrors.IsAlreadyExists(err) {
+					return false, err
+				}
+
+				user.Annotations[syncedToLLdapAna] = "true"
+				user.Spec.InitialPassword = ""
+				err = r.Update(context.TODO(), user, &client.UpdateOptions{})
+				if err != nil {
+					return false, err
+				}
+
+				return true, nil
+			}
+		}
+		// user already exist in lldap, just return
+		return true, nil
+	})
+	return err
 }

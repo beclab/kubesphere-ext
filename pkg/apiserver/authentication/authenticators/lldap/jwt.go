@@ -7,7 +7,6 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
 	corev1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/klog"
 	autht "kubesphere.io/kubesphere/pkg/apiserver/authentication/token"
 )
 
@@ -43,7 +42,6 @@ func (j *jwtAuthenticator) AuthenticateToken(ctx context.Context, tokenString st
 	}
 
 	if claims, ok := token.Claims.(*autht.Claims); ok && token.Valid {
-		klog.V(0).Infof("claims: %#v", claims)
 		return &authenticator.Response{
 			User: &user.DefaultInfo{
 				Name: claims.Username,

@@ -51,13 +51,13 @@ func addAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		client.Config())
 
 	// ldap user sync controller
-	if cmOptions.IsControllerEnabled("user-sync-from-lldap") {
-		userSyncController := &user.SyncReconciler{
-			MaxConcurrentReconciles: 1,
-			//KubeconfigClient:        kubeconfigClient,
-		}
-		addControllerWithSetup(mgr, "user-sync-from-lldap", userSyncController)
-	}
+	//if cmOptions.IsControllerEnabled("user-sync-from-lldap") {
+	//	userSyncController := &user.SyncReconciler{
+	//		MaxConcurrentReconciles: 1,
+	//		//KubeconfigClient:        kubeconfigClient,
+	//	}
+	//	addControllerWithSetup(mgr, "user-sync-from-lldap", userSyncController)
+	//}
 	// "namespace" controller
 	if cmOptions.IsControllerEnabled("namespace") {
 		namespaceReconciler := &namespace.Reconciler{}
