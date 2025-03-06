@@ -90,7 +90,7 @@ func (r *ruleAccumulator) visit(_ fmt.Stringer, _ string, rule *rbacv1.PolicyRul
 
 func (r *RBACAuthorizer) Authorize(requestAttributes authorizer.Attributes) (authorizer.Decision, string, error) {
 	ruleCheckingVisitor := &authorizingVisitor{requestAttributes: requestAttributes}
-	klog.V(0).Infof("enter rbac authorize")
+	//klog.V(0).Infof("enter rbac authorize")
 
 	r.visitRulesFor(requestAttributes, ruleCheckingVisitor.visit)
 
@@ -203,13 +203,13 @@ func (r *RBACAuthorizer) rulesFor(requestAttributes authorizer.Attributes) ([]rb
 func (r *RBACAuthorizer) visitRulesFor(requestAttributes authorizer.Attributes, visitor func(source fmt.Stringer, regoPolicy string, rule *rbacv1.PolicyRule, err error) bool) {
 
 	if globalRoleBindings, err := r.am.ListGlobalRoleBindings(""); err != nil {
-		klog.V(0).Infof("ListGlobalRoleBindings: err=%v", err)
+		//klog.V(0).Infof("ListGlobalRoleBindings: err=%v", err)
 		if !visitor(nil, "", nil, err) {
 			return
 		}
 	} else {
 		sourceDescriber := &globalRoleBindingDescriber{}
-		klog.V(0).Infof("globalRoleBindings:len: %d", len(globalRoleBindings))
+		//klog.V(0).Infof("globalRoleBindings:len: %d", len(globalRoleBindings))
 		for _, globalRoleBinding := range globalRoleBindings {
 			subjectIndex, applies := appliesTo(requestAttributes.GetUser(), globalRoleBinding.Subjects, "")
 			if !applies {

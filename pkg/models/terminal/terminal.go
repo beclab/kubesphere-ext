@@ -299,6 +299,7 @@ func (t *terminaler) startProcess(namespace, podName, containerName string, cmd 
 
 	exec, err := remotecommand.NewSPDYExecutor(t.config, "POST", req.URL())
 	if err != nil {
+		klog.V(0).Infof("exec err=%v", err)
 		return err
 	}
 
@@ -310,6 +311,7 @@ func (t *terminaler) startProcess(namespace, podName, containerName string, cmd 
 		Tty:               true,
 	})
 	if err != nil {
+		klog.V(0).Infof("exec stream err=%v", err)
 		return err
 	}
 
@@ -328,7 +330,7 @@ func isValidShell(validShells []string, shell string) bool {
 
 func (t *terminaler) HandleSession(shell, namespace, podName, containerName string, conn *websocket.Conn) {
 	var err error
-	validShells := []string{"sh", "bash"}
+	validShells := []string{"bash", "sh"}
 
 	session := &TerminalSession{conn: conn, sizeChan: make(chan remotecommand.TerminalSize)}
 
@@ -343,6 +345,7 @@ func (t *terminaler) HandleSession(shell, namespace, podName, containerName stri
 			if err = t.startProcess(namespace, podName, containerName, cmd, session); err == nil {
 				break
 			}
+			time.Sleep(3 * time.Second)
 		}
 	}
 
