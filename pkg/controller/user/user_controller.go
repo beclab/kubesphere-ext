@@ -113,11 +113,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if r.LLdapClient == nil {
 		bindUsername, err := r.getCredentialVal(ctx, "lldap-ldap-user-dn")
 		if err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 		bindPassword, err := r.getCredentialVal(ctx, "lldap-ldap-user-pass")
 		if err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 
 		lldapClient, err := lclient.New(&lconfig.Config{
@@ -128,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		})
 		klog.V(0).Infof("bindUsername: %s,bindPassword: %s", bindUsername, bindPassword)
 		if err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 		r.LLdapClient = lldapClient
 	}
@@ -181,7 +181,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	if r.LLdapClient != nil {
 		if err = r.waitForSyncToLLDAP(user); err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 	}
 
