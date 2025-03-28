@@ -73,8 +73,8 @@ github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496/go.mod h1:o
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.30.12/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZveU8YkpAk0=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
-github.com/beclab/lldap-client v0.0.5 h1:1Qgw1Sck7vCNdCujVKk5HfgQtdgXZPo3ZMHllRI5Af4=
-github.com/beclab/lldap-client v0.0.5/go.mod h1:/SDNjuZMMBHxhvUBxArvwo18luo8uCkY6j2rdywEMX0=
+github.com/beclab/lldap-client v0.0.6 h1:sBt9AVgKvZT7XHlW38kCyoBFzl9pxgN3mARoYDrZTIs=
+github.com/beclab/lldap-client v0.0.6/go.mod h1:/SDNjuZMMBHxhvUBxArvwo18luo8uCkY6j2rdywEMX0=
 github.com/beevik/ntp v0.2.0/go.mod h1:hIHWr+l3+/clUnF44zdK+CWW7fO8dR5cIylAQ76NRpg=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=

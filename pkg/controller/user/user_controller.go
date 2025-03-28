@@ -181,6 +181,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	if r.LLdapClient != nil {
 		if err = r.waitForSyncToLLDAP(user); err != nil {
+			klog.V(0).Infof("wait for sync to llldap err %v", err)
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 	}
@@ -188,7 +189,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if r.KubeconfigClient != nil {
 		// ensure user KubeconfigClient configmap is created
 		if err = r.KubeconfigClient.CreateKubeConfig(user); err != nil {
-			klog.Error(err)
+			klog.V(0).Infof("create kubeconfig err %v", err)
 			r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
 			return ctrl.Result{}, err
 		}
@@ -278,6 +279,7 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 	}
 
 	err := utilwait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		klog.V(0).Infof("poll info from lldap...")
 		_, err = r.LLdapClient.Users().Get(context.TODO(), user.Name)
 		if err != nil {
 			if lapierrors.IsNotFound(err) {
@@ -317,5 +319,6 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 		// user already exist in lldap, just return
 		return true, nil
 	})
+	klog.V(0).Infof("poll result %v", err)
 	return err
 }
