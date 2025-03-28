@@ -11,7 +11,7 @@ require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
-	github.com/beclab/lldap-client v0.0.5
+	github.com/beclab/lldap-client v0.0.6
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
@@ -74,7 +74,6 @@ require (
 	k8s.io/code-generator v0.21.2
 	k8s.io/component-base v0.21.4
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 	k8s.io/kubectl v0.21.2
 	k8s.io/metrics v0.21.2
