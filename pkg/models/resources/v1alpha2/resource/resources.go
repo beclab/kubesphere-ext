@@ -26,6 +26,7 @@ import (
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/clusterrole"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/configmap"
+	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/cronjob"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/daemonset"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/deployment"
 	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha2/ingress"
@@ -61,7 +62,7 @@ func NewResourceGetter(factory informers.InformerFactory) *ResourceGetter {
 	resourceGetters := make(map[string]v1alpha2.Interface)
 
 	resourceGetters[v1alpha2.ConfigMaps] = configmap.NewConfigmapSearcher(factory.KubernetesSharedInformerFactory())
-	//resourceGetters[v1alpha2.CronJobs] = cronjob.NewCronJobSearcher(factory.KubernetesSharedInformerFactory())
+	resourceGetters[v1alpha2.CronJobs] = cronjob.NewCronJobSearcher(factory.KubernetesSharedInformerFactory())
 	resourceGetters[v1alpha2.DaemonSets] = daemonset.NewDaemonSetSearcher(factory.KubernetesSharedInformerFactory())
 	resourceGetters[v1alpha2.Deployments] = deployment.NewDeploymentSetSearcher(factory.KubernetesSharedInformerFactory())
 	resourceGetters[v1alpha2.Ingresses] = ingress.NewIngressSearcher(factory.KubernetesSharedInformerFactory())
