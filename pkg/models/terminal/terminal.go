@@ -248,6 +248,16 @@ func (n *NodeTerminaler) getNSEnterPod() (*v1.Pod, error) {
 						SecurityContext: &v1.SecurityContext{
 							Privileged: &n.Privileged,
 						},
+						Env: []v1.EnvVar{
+							{
+								Name:  "LANG",
+								Value: "en_US.UTF-8",
+							},
+							{
+								Name:  "LC_ALL",
+								Value: "en_US.UTF-8",
+							},
+						},
 					},
 				},
 			},
