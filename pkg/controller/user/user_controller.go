@@ -30,9 +30,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 	iamv1alpha2 "kubesphere.io/api/iam/v1alpha2"
 	"kubesphere.io/kubesphere/pkg/models/kubeconfig"
@@ -181,7 +183,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	if r.LLdapClient != nil {
 		if err = r.waitForSyncToLLDAP(user); err != nil {
-			klog.V(0).Infof("wait for sync to llldap err %v", err)
+			klog.V(0).Infof("wait for sync to lldap err %v", err)
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 	}
@@ -273,15 +275,17 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 		return nil
 	}
 	isNeedSyncToLLDap, _ := strconv.ParseBool(ana[needSyncToLLdapAna])
-	synced, _ := strconv.ParseBool(ana[syncedToLLdapAna])
-	if !isNeedSyncToLLDap || synced {
+	//synced, _ := strconv.ParseBool(ana[syncedToLLdapAna])
+	if !isNeedSyncToLLDap {
 		return nil
 	}
 
 	err := utilwait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		klog.V(0).Infof("poll info from lldap...")
 		_, err = r.LLdapClient.Users().Get(context.TODO(), user.Name)
+
 		if err != nil {
+			// user not synced to lldap
 			if lapierrors.IsNotFound(err) {
 				u := generated.CreateUserInput{
 					Id:          user.Name,
@@ -292,31 +296,97 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 				if err != nil && !lapierrors.IsAlreadyExists(err) {
 					return false, err
 				}
-				lldapGroupID := 1
-				if isAdmin, _ := strconv.ParseBool(ana[globalAdmin]); !isAdmin {
-					g, err := r.LLdapClient.Groups().GetByName(context.TODO(), regularGroup)
-					if err != nil {
-						// lldap_regular group will always exists ensure by lldap
+				// user created success in lldap
+
+				for _, groupName := range user.Spec.Groups {
+					g, err := r.LLdapClient.Groups().GetByName(context.TODO(), groupName)
+					if err == nil {
+						// group already exist in lldap
+						continue
+					}
+
+					// group does not exist in lldap, so create it
+					if lapierrors.IsNotFound(err) {
+						_, err = r.LLdapClient.Groups().Create(context.TODO(), groupName)
+						if err != nil && !lapierrors.IsAlreadyExists(err) {
+							return false, err
+						}
+					}
+					err = r.LLdapClient.Groups().AddUser(context.TODO(), user.Name, g.Id)
+					if err != nil && !lapierrors.IsAlreadyExists(err) {
 						return false, err
 					}
-					lldapGroupID = g.Id
-				}
-				err = r.LLdapClient.Groups().AddUser(context.TODO(), user.Name, lldapGroupID)
-				if err != nil && !lapierrors.IsAlreadyExists(err) {
-					return false, err
 				}
 
-				user.Annotations[syncedToLLdapAna] = "true"
-				user.Spec.InitialPassword = ""
-				err = r.Update(context.TODO(), user, &client.UpdateOptions{})
+			} else {
+				return false, err
+			}
+		} else {
+			// user already exists in lldap, should add/remove group
+			u, err := r.LLdapClient.Users().Get(context.TODO(), user.Name)
+			if err != nil {
+				return false, err
+			}
+			getGroups := func(u *generated.GetUserDetailsUser) (groups []string) {
+				for _, group := range u.Groups {
+					groups = append(groups, group.DisplayName)
+				}
+				return groups
+			}
+			oldGroups := sets.NewString(getGroups(u)...)
+			curGroups := sets.NewString(user.Spec.Groups...)
+			groupToDelete := oldGroups.Difference(curGroups)
+			groupToAdd := curGroups.Difference(oldGroups)
+
+			for groupName := range groupToDelete {
+				group, err := r.LLdapClient.Groups().GetByName(context.TODO(), groupName)
 				if err != nil {
 					return false, err
 				}
-
-				return true, nil
+				err = r.LLdapClient.Groups().RemoveUser(context.TODO(), user.Name, group.Id)
+				if err != nil {
+					return false, err
+				}
+			}
+			for groupName := range groupToAdd {
+				groupId := 0
+				group, err := r.LLdapClient.Groups().GetByName(context.TODO(), groupName)
+				if err != nil {
+					if !lapierrors.IsNotFound(err) {
+						return false, err
+					}
+					groupNew, err := r.LLdapClient.Groups().Create(context.TODO(), groupName)
+					if err != nil && !lapierrors.IsAlreadyExists(err) {
+						return false, err
+					}
+					groupId = groupNew.Id
+				} else {
+					groupId = group.Id
+				}
+				err = r.LLdapClient.Groups().AddUser(context.TODO(), user.Name, groupId)
+				if err != nil && !lapierrors.IsAlreadyExists(err) {
+					return false, err
+				}
 			}
 		}
-		// user already exist in lldap, just return
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			var u iamv1alpha2.User
+			err = r.Get(context.TODO(), types.NamespacedName{Name: user.Name}, &u)
+			if err != nil {
+				return err
+			}
+			u.Annotations[syncedToLLdapAna] = "true"
+			u.Spec.InitialPassword = ""
+			err = r.Update(context.TODO(), &u, &client.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return false, err
+		}
+
 		return true, nil
 	})
 	klog.V(0).Infof("poll result %v", err)
