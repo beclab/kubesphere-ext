@@ -54,6 +54,7 @@ func AddToContainer(container *restful.Container, im im.IdentityManagementInterf
 		Returns(http.StatusOK, api.StatusOK, iamv1alpha2.User{}).
 		Reads(iamv1alpha2.User{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.UserTag}))
+
 	ws.Route(ws.DELETE("/users/{user}").
 		To(handler.DeleteUser).
 		Doc("Delete the specified user.").
@@ -78,6 +79,16 @@ func AddToContainer(container *restful.Container, im im.IdentityManagementInterf
 		To(handler.ListUsers).
 		Doc("List all users.").
 		Returns(http.StatusOK, api.StatusOK, api.ListResult{Items: []interface{}{iamv1alpha2.User{}}}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.UserTag}))
+
+	ws.Route(ws.GET("/lldap/users").
+		To(handler.ListLLdapUsers).
+		Doc("List all users sync to lldap").
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.UserTag}))
+
+	ws.Route(ws.GET("/lldap/groups").
+		To(handler.ListLLdapGroups).
+		Doc("List all groups sync to lldap").
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.UserTag}))
 
 	// clusterroles

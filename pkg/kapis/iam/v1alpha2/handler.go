@@ -205,6 +205,24 @@ func (h *iamHandler) ListUsers(request *restful.Request, response *restful.Respo
 	response.WriteEntity(result)
 }
 
+func (h *iamHandler) ListLLdapUsers(request *restful.Request, response *restful.Response) {
+	result, err := h.im.ListLLdapUsers(query.New())
+	if err != nil {
+		api.HandleInternalError(response, request, err)
+		return
+	}
+	response.WriteEntity(result)
+}
+
+func (h *iamHandler) ListLLdapGroups(request *restful.Request, response *restful.Response) {
+	result, err := h.im.ListLLdapGroups(query.New())
+	if err != nil {
+		api.HandleInternalError(response, request, err)
+		return
+	}
+	response.WriteEntity(result)
+}
+
 func appendGlobalRoleAnnotation(user *iamv1alpha2.User, globalRole string) *iamv1alpha2.User {
 	if user.Annotations == nil {
 		user.Annotations = make(map[string]string, 0)
