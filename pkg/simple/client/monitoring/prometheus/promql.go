@@ -15,9 +15,9 @@ package prometheus
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"kubesphere.io/kubesphere/pkg/constants"
 	"kubesphere.io/kubesphere/pkg/simple/client/monitoring"
 )
@@ -113,6 +113,19 @@ var promQLTemplates = map[string]string{
 	"node_load15":                 `node:load15:ratio{$1}`,
 	"node_pod_abnormal_ratio":     `node:pod_abnormal:ratio{$1}`,
 	"node_pleg_quantile":          `node_quantile:kubelet_pleg_relist_duration_seconds:histogram_quantile{$1}`,
+
+	"node_disk_smartctl_info":           `node:node_disk_smartctl_info{$1}`,
+	"node_disk_temp_celsius":            `node:node_disk_temp_celsius{$1}`,
+	"node_cpu_temp_celsius":             `node:node_cpu_temp_celsius{$1}`,
+	"node_one_disk_utilization_ratio":   `node:disk_utilization:ratio{$1}`,
+	"node_network_address_info":         `node:node_network_address_info{$1}`,
+	"node_one_disk_capacity_size":       `node:disk_capacity:size{$1}`,
+	"node_one_disk_avail_size":          `node:disk_avail:size{$1}`,
+	"node_user_cpu_usage":               `round(node:node_user_cpu_utilisation:avg1m{$1} * node:node_num_cpu:sum{$1}, 0.001)`,
+	"node_system_cpu_usage":             `round(node:node_system_cpu_utilisation:avg1m{$1} * node:node_num_cpu:sum{$1}, 0.001)`,
+	"node_iowait_cpu_usage":             `round(node:node_iowait_cpu_utilisation:avg1m{$1} * node:node_num_cpu:sum{$1}, 0.001)`,
+	"node_cpu_base_frequency_hertz_max": `node:node_cpu_base_frequency_hertz:max{$1}`,
+	"node_disk_power_on_hours":          `node:node_disk_power_on_hours{$1}`,
 
 	"node_device_size_usage":       `sum by(device, node, host_ip, role) (node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1}) - sum by(device, node, host_ip, role) (node_filesystem_avail_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1})`,
 	"node_device_size_utilisation": `1 - sum by(device, node, host_ip, role) (node_filesystem_avail_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1}) / sum by(device, node, host_ip, role) (node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1})`,
