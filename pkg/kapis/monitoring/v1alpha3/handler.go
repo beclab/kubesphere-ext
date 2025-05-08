@@ -76,6 +76,16 @@ func (h handler) handleUserMetricsQuery(req *restful.Request, resp *restful.Resp
 	h.handleNamedMetricsQuery(resp, opt)
 }
 
+func (h handler) handleNodeMetricsQuery(req *restful.Request, resp *restful.Response) {
+	params := parseRequestParams(req)
+	opt, err := h.makeQueryOptions(params, monitoring.LevelNode)
+	if err != nil {
+		api.HandleBadRequest(resp, nil, err)
+		return
+	}
+	h.handleNamedMetricsQuery(resp, opt)
+}
+
 func (h handler) handleWorkloadMetricsQuery(req *restful.Request, resp *restful.Response) {
 	params := parseRequestParams(req)
 	opt, err := h.makeQueryOptions(params, monitoring.LevelWorkload)

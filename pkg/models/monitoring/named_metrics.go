@@ -123,6 +123,19 @@ var NodeMetrics = []string{
 	"node_pod_abnormal_ratio",
 	"node_pleg_quantile",
 
+	"node_disk_smartctl_info",
+	"node_disk_temp_celsius",
+	"node_cpu_temp_celsius",
+	"node_one_disk_utilization_ratio",
+	"node_network_address_info",
+	"node_one_disk_capacity_size",
+	"node_one_disk_avail_size",
+	"node_user_cpu_usage",
+	"node_system_cpu_usage",
+	"node_iowait_cpu_usage",
+	"node_cpu_base_frequency_hertz_max",
+	"node_disk_power_on_hours",
+
 	"node_device_size_usage",
 	"node_device_size_utilisation",
 
