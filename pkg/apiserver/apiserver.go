@@ -339,6 +339,7 @@ func (s *APIServer) waitForResourceSync(ctx context.Context) error {
 		},
 		{Group: "batch", Version: "v1"}: {
 			"jobs",
+			"cronjobs",
 		},
 		//{Group: "batch", Version: "v1beta1"}: {
 		//	"cronjobs",
