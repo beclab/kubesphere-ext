@@ -135,6 +135,8 @@ var NodeMetrics = []string{
 	"node_iowait_cpu_usage",
 	"node_cpu_base_frequency_hertz_max",
 	"node_disk_power_on_hours",
+	"node_one_disk_data_bytes_written",
+	"node_one_disk_data_bytes_read",
 
 	"node_device_size_usage",
 	"node_device_size_utilisation",
