@@ -137,6 +137,12 @@ var NodeMetrics = []string{
 	"node_disk_power_on_hours",
 	"node_one_disk_data_bytes_written",
 	"node_one_disk_data_bytes_read",
+	"node_cpu_info",
+	"node_memory_buffer_bytes",
+	"node_memory_cached_bytes",
+	"node_memory_system_reserved",
+	"node_vmstat_pswpout_bytes",
+	"node_vmstat_pswpin_bytes",
 
 	"node_device_size_usage",
 	"node_device_size_utilisation",
