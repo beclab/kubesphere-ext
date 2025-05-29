@@ -128,6 +128,12 @@ var promQLTemplates = map[string]string{
 	"node_disk_power_on_hours":          `node:node_disk_power_on_hours{$1}`,
 	"node_one_disk_data_bytes_written":  `node:node_one_disk_data_bytes_written{$1}`,
 	"node_one_disk_data_bytes_read":     `node:node_one_disk_data_bytes_read{$1}`,
+	"node_cpu_info":                     `node:node_cpu_info{$1}`,
+	"node_memory_buffer_bytes":          `node:node_memory_Buffers_bytes{$1}`,
+	"node_memory_cached_bytes":          `node:node_memory_Cached_bytes{$1}`,
+	"node_memory_system_reserved":       `node:node_memory_system_reserved{$1}`,
+	"node_vmstat_pswpout_bytes":         `node:node_vmstat_pswpout{$1}`,
+	"node_vmstat_pswpin_bytes":          `node:node_vmstat_pswpin{$1}`,
 
 	"node_device_size_usage":       `sum by(device, node, host_ip, role) (node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1}) - sum by(device, node, host_ip, role) (node_filesystem_avail_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1})`,
 	"node_device_size_utilisation": `1 - sum by(device, node, host_ip, role) (node_filesystem_avail_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1}) / sum by(device, node, host_ip, role) (node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:{$1})`,
