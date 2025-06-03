@@ -146,6 +146,8 @@ var NodeMetrics = []string{
 
 	"node_device_size_usage",
 	"node_device_size_utilisation",
+	"node_device_partition_size_total",
+	"node_filesystem_size_bytes",
 
 	// meter
 	"meter_node_cpu_usage",
