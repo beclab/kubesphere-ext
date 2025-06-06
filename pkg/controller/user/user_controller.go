@@ -61,6 +61,7 @@ const (
 
 	needSyncToLLdapAna = "iam.kubesphere.io/sync-to-lldap"
 	syncedToLLdapAna   = "iam.kubesphere.io/synced-to-lldap"
+	userIndexAna       = "bytetrade.io/user-index"
 	regularGroup       = "lldap_regular"
 
 	globalAdmin = "iam.kubesphere.io/globalrole"
@@ -279,6 +280,7 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 	if !isNeedSyncToLLDap {
 		return nil
 	}
+	var userIndex int
 
 	err := utilwait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		klog.V(0).Infof("poll info from lldap...")
@@ -292,11 +294,13 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 					Email:       user.Spec.Email,
 					DisplayName: user.Name,
 				}
-				_, err = r.LLdapClient.Users().Create(context.TODO(), &u, user.Spec.InitialPassword)
+				userRes, err := r.LLdapClient.Users().Create(context.TODO(), &u, user.Spec.InitialPassword)
 				if err != nil && !lapierrors.IsAlreadyExists(err) {
 					return false, err
 				}
 				// user created success in lldap
+
+				userIndex = userRes.CreateUser.UserIndex
 
 				for _, groupName := range user.Spec.Groups {
 					g, err := r.LLdapClient.Groups().GetByName(context.TODO(), groupName)
@@ -327,6 +331,8 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 			if err != nil {
 				return false, err
 			}
+			userIndex = u.UserIndex
+
 			getGroups := func(u *generated.GetUserDetailsUser) (groups []string) {
 				for _, group := range u.Groups {
 					groups = append(groups, group.DisplayName)
@@ -376,6 +382,7 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 				return err
 			}
 			u.Annotations[syncedToLLdapAna] = "true"
+			u.Annotations[userIndexAna] = strconv.FormatInt(int64(userIndex-1), 10)
 			u.Spec.InitialPassword = ""
 			err = r.Update(context.TODO(), &u, &client.UpdateOptions{})
 			if err != nil {
