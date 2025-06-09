@@ -382,7 +382,7 @@ func (r *Reconciler) waitForSyncToLLDAP(user *iamv1alpha2.User) error {
 				return err
 			}
 			u.Annotations[syncedToLLdapAna] = "true"
-			u.Annotations[userIndexAna] = strconv.FormatInt(int64(userIndex-1), 10)
+			u.Annotations[userIndexAna] = strconv.FormatInt(int64(userIndex-2), 10)
 			u.Spec.InitialPassword = ""
 			err = r.Update(context.TODO(), &u, &client.UpdateOptions{})
 			if err != nil {
