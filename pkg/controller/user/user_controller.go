@@ -107,6 +107,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
+	klog.V(0).Infof("user-controller-manager reconcile name %v", req.NamespacedName)
 	logger := r.Logger.WithValues("user", req.NamespacedName)
 	user := &iamv1alpha2.User{}
 	err := r.Get(ctx, req.NamespacedName, user)
@@ -116,11 +117,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if r.LLdapClient == nil {
 		bindUsername, err := r.getCredentialVal(ctx, "lldap-ldap-user-dn")
 		if err != nil {
-			return ctrl.Result{RequeueAfter: time.Second}, err
+			klog.V(0).Infof("get lldap secret failed %v", err)
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 		bindPassword, err := r.getCredentialVal(ctx, "lldap-ldap-user-pass")
 		if err != nil {
-			return ctrl.Result{RequeueAfter: time.Second}, err
+			klog.V(0).Infof("get lldap secret failed %v", err)
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 
 		lldapClient, err := lclient.New(&lconfig.Config{
@@ -129,9 +132,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			Password:   bindPassword,
 			TokenCache: memory.New(),
 		})
-		klog.V(0).Infof("bindUsername: %s,bindPassword: %s", bindUsername, bindPassword)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: time.Second}, err
+			klog.V(0).Infof("get lldap client failed %v", err)
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 		r.LLdapClient = lldapClient
 	}
@@ -155,13 +158,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			if r.LLdapClient != nil {
 				if err = r.waitForDeleteFromLLDAP(user.Name); err != nil {
 					// ignore timeout error
-					r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
-					return ctrl.Result{}, err
+					klog.V(0).Infof("wait for delete user from lldap failed %v", err)
+					return ctrl.Result{RequeueAfter: time.Second}, nil
 				}
 			}
 
 			if err = r.deleteRoleBindings(ctx, user); err != nil {
-				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
+				klog.V(0).Infof("delete rolebinding failed %v", err)
 				return ctrl.Result{}, err
 			}
 
@@ -172,33 +175,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			klog.V(0).Infof("name=%s,user3: %v", user.Name, user.Spec.InitialPassword)
 
 			if err = r.Update(ctx, user, &client.UpdateOptions{}); err != nil {
-				klog.Error(err)
-				r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
+				klog.V(0).Infof("update user failed %v", err)
 				return ctrl.Result{}, err
 			}
 		}
 
 		// Our finalizer has finished, so the reconciler can do nothing.
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	if r.LLdapClient != nil {
 		if err = r.waitForSyncToLLDAP(user); err != nil {
-			klog.V(0).Infof("wait for sync to lldap err %v", err)
-			return ctrl.Result{RequeueAfter: time.Second}, err
+			klog.V(0).Infof("wait for sync to lldap failed %v", err)
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
+		klog.V(0).Infof("user %s sync to lldap successes", user.Name)
 	}
 
 	if r.KubeconfigClient != nil {
 		// ensure user KubeconfigClient configmap is created
 		if err = r.KubeconfigClient.CreateKubeConfig(user); err != nil {
 			klog.V(0).Infof("create kubeconfig err %v", err)
-			r.Recorder.Event(user, corev1.EventTypeWarning, failedSynced, fmt.Sprintf(syncFailMessage, err))
 			return ctrl.Result{}, err
 		}
 	}
-
-	r.Recorder.Event(user, corev1.EventTypeNormal, successSynced, messageResourceSynced)
 
 	return ctrl.Result{}, nil
 }
