@@ -127,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		}
 
 		lldapClient, err := lclient.New(&lconfig.Config{
-			Host:       "http://lldap-service.os-system:17170",
+			Host:       "http://lldap-service.os-framework:17170",
 			Username:   bindUsername,
 			Password:   bindPassword,
 			TokenCache: memory.New(),
@@ -246,7 +246,7 @@ func (r *Reconciler) syncUserStatus(ctx context.Context, user *iamv1alpha2.User)
 
 func (r *Reconciler) getCredentialVal(ctx context.Context, key string) (string, error) {
 	var secret corev1.Secret
-	k := types.NamespacedName{Name: "lldap-credentials", Namespace: "os-system"}
+	k := types.NamespacedName{Name: "lldap-credentials", Namespace: "os-framework"}
 	err := r.Client.Get(ctx, k, &secret)
 	if err != nil {
 		return "", err
