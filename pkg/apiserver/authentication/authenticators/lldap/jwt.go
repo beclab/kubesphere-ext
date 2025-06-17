@@ -29,7 +29,7 @@ func (j *jwtAuthenticator) AuthenticateToken(ctx context.Context, tokenString st
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		secret, err := j.secretLister.Secrets("os-framework").Get("lldap-credentials")
+		secret, err := j.secretLister.Secrets("os-platform").Get("lldap-credentials")
 		if err != nil {
 			return nil, err
 		}
