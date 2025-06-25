@@ -243,7 +243,7 @@ func (s *APIServer) buildHandlerChain() {
 	default:
 		fallthrough
 	case authorization.RBAC:
-		excludedPaths := []string{"/oauth/*", "/kapis/config.kubesphere.io/*", "/kapis/version", "/kapis/metrics", "/kapis/monitoring.kubesphere.io/v1alpha3/cluster"}
+		excludedPaths := []string{"/oauth/*", "/kapis/config.kubesphere.io/*", "/kapis/version", "/kapis/metrics", "/kapis/monitoring.kubesphere.io/v1alpha3/cluster", "/kapis/iam.kubesphere.io/v1alpha2/lldap/users"}
 		pathAuthorizer, _ := path.NewAuthorizer(excludedPaths)
 		amOperator := am.NewReadOnlyOperator(s.InformerFactory)
 		authorizers = unionauthorizer.New(pathAuthorizer, rbac.NewRBACAuthorizer(amOperator))
