@@ -20,10 +20,10 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 OUTPUT_DIR=bin
-ifeq (${GOFLAGS},)
-	# go build with vendor by default.
-	export GOFLAGS=-mod=vendor
-endif
+#ifeq (${GOFLAGS},)
+#	# go build with vendor by default.
+#	export GOFLAGS=-mod=vendor
+#endif
 define ALL_HELP_INFO
 # Build code.
 #
