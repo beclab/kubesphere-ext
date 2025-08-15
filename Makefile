@@ -44,7 +44,7 @@ define ALL_HELP_INFO
 #           debugging tools like delve.
 endef
 .PHONY: all
-all: test ks-apiserver ks-controller-manager;$(info $(M)...Begin to test and build all of binary.) @ ## Test and build all of binary.
+all: test ks-apiserver;$(info $(M)...Begin to test and build all of binary.) @ ## Test and build all of binary.
 
 help:
 	@grep -hE '^[ a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -52,15 +52,11 @@ help:
 
 .PHONY: binary
 # Build all of binary
-binary: | ks-apiserver ks-controller-manager; $(info $(M)...Build all of binary.) @ ## Build all of binary.
+binary: | ks-apiserver ; $(info $(M)...Build all of binary.) @ ## Build all of binary.
 
 # Build ks-apiserver binary
 ks-apiserver: ; $(info $(M)...Begin to build ks-apiserver binary.)  @ ## Build ks-apiserver.
 	 hack/gobuild.sh cmd/ks-apiserver;
-
-# Build ks-controller-manager binary
-ks-controller-manager: ; $(info $(M)...Begin to build ks-controller-manager binary.)  @ ## Build ks-controller-manager.
-	hack/gobuild.sh cmd/controller-manager
 
 # Run all verify scripts hack/verify-*.sh
 verify-all: ; $(info $(M)...Begin to run all verify scripts hack/verify-*.sh.)  @ ## Run all verify scripts hack/verify-*.sh.

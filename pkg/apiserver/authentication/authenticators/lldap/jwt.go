@@ -3,7 +3,7 @@ package lldap
 import (
 	"context"
 	"fmt"
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
 	corev1 "k8s.io/client-go/listers/core/v1"
