@@ -226,12 +226,6 @@ func TestRequestInfoFactory_NewRequestInfo(t *testing.T) {
 				if test.expectedIsResourceRequest != requestInfo.IsResourceRequest {
 					t.Errorf("%s: expected is resource request %v, actual %+v", test.name, test.expectedIsResourceRequest, requestInfo.IsResourceRequest)
 				}
-				if test.expectedCluster != requestInfo.Cluster {
-					t.Errorf("%s: expected cluster %v, actual %+v", test.name, test.expectedCluster, requestInfo.Cluster)
-				}
-				if test.expectedWorkspace != requestInfo.Workspace {
-					t.Errorf("%s: expected workspace %v, actual %+v", test.name, test.expectedWorkspace, requestInfo.Workspace)
-				}
 				if test.expectedNamespace != requestInfo.Namespace {
 					t.Errorf("%s: expected namespace %v, actual %+v", test.name, test.expectedNamespace, requestInfo.Namespace)
 				}

@@ -469,7 +469,7 @@ func (mo monitoringOperator) GetAppWorkloads(ns string, apps []string) map[strin
 			for _, com := range appObj.Status.ComponentList.Objects {
 				kind := strings.Title(com.Kind)
 				name := com.Name
-				componentsMap[getAppFullName((appObj))] = append(componentsMap[getAppFullName(appObj)], kind+":"+name)
+				componentsMap[getAppFullName(appObj)] = append(componentsMap[getAppFullName(appObj)], kind+":"+name)
 			}
 		}
 	}

@@ -33,13 +33,11 @@ import (
 // because some resources are public accessible.
 type basicAuthenticator struct {
 	authenticator auth.PasswordAuthenticator
-	loginRecorder auth.LoginRecorder
 }
 
-func NewBasicAuthenticator(authenticator auth.PasswordAuthenticator, loginRecorder auth.LoginRecorder) basictoken.Password {
+func NewBasicAuthenticator(authenticator auth.PasswordAuthenticator) basictoken.Password {
 	return &basicAuthenticator{
 		authenticator: authenticator,
-		loginRecorder: loginRecorder,
 	}
 }
 
