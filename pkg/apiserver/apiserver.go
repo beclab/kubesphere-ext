@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/anonymous"
-	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/bearertoken"
 	"net/http"
 	rt "runtime"
 	"strconv"
 	"sync"
 	"time"
+
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/anonymous"
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/bearertoken"
 
 	"github.com/emicklei/go-restful"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
@@ -252,7 +253,13 @@ func (s *APIServer) buildHandlerChain() {
 	secretLister := s.InformerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets().Lister()
 	handler = filters.WithAuthorization(handler, authorizers)
 
+	saAuthenticator, err := NewDelegatingAuthenticator(s.KubernetesClient.Kubernetes().AuthenticationV1().TokenReviews())
+	if err != nil {
+		panic(err)
+	}
+
 	authn := unionauth.New(anonymous.NewAuthenticator(),
+		saAuthenticator,
 		bearertoken.New(lldap_jwt.NewJwtAuthenticator(secretLister)),
 	)
 
