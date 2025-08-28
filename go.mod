@@ -758,7 +758,7 @@ replace (
 	k8s.io/component-helpers => k8s.io/component-helpers v0.21.2
 	k8s.io/gengo => k8s.io/gengo v0.0.0-20200114144118-36b2048a9120
 	k8s.io/klog => k8s.io/klog v1.0.0
-	k8s.io/klog/v2 => k8s.io/klog/v2 v2.8.0
+	k8s.io/klog/v2 => github.com/eball/klog/v2 v2.8.0-fix1
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	k8s.io/kubectl => k8s.io/kubectl v0.21.2
 	k8s.io/metrics => k8s.io/metrics v0.21.2
