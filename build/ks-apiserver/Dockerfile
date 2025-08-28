@@ -3,7 +3,7 @@
 # that can be found in the LICENSE file.
 
 # Download dependencies
-FROM alpine:3.11 as base_os_context
+FROM alpine:3.11 AS base_os_context
 
 ARG TARGETARCH
 ARG TARGETOS
@@ -22,7 +22,7 @@ RUN tar xvzf /tmp/helm-${HELM_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /tmp
 RUN mv /tmp/${TARGETOS}-${TARGETARCH}/helm ${OUTDIR}/usr/local/bin/
 
 # Build 
-FROM golang:1.16.3 as build_context
+FROM golang:1.24.2 AS build_context
 
 ENV OUTDIR=/out
 RUN mkdir -p ${OUTDIR}/usr/local/bin/

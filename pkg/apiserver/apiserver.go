@@ -20,14 +20,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/anonymous"
-	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/bearertoken"
 	"net/http"
 	rt "runtime"
 	"strconv"
 	"sync"
 	"time"
 
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/anonymous"
+	"kubesphere.io/kubesphere/pkg/apiserver/authentication/request/bearertoken"
+
+	rbacauthn "github.com/brancz/kube-rbac-proxy/pkg/authn"
 	"github.com/emicklei/go-restful"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
 	lldap_jwt "kubesphere.io/kubesphere/pkg/apiserver/authentication/authenticators/lldap"
@@ -252,7 +254,19 @@ func (s *APIServer) buildHandlerChain() {
 	secretLister := s.InformerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets().Lister()
 	handler = filters.WithAuthorization(handler, authorizers)
 
+	tokenClient := s.KubernetesClient.Kubernetes().AuthenticationV1().TokenReviews()
+	saAuthenticator, err := rbacauthn.NewDelegatingAuthenticator(tokenClient, &rbacauthn.AuthnConfig{
+		X509:   &rbacauthn.X509Config{},
+		Header: &rbacauthn.AuthnHeaderConfig{},
+		OIDC:   &rbacauthn.OIDCConfig{},
+		Token:  &rbacauthn.TokenConfig{},
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate delegating authenticator: %w", err))
+	}
+
 	authn := unionauth.New(anonymous.NewAuthenticator(),
+		saAuthenticator,
 		bearertoken.New(lldap_jwt.NewJwtAuthenticator(secretLister)),
 	)
 
