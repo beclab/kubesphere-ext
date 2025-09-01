@@ -253,7 +253,7 @@ func (s *APIServer) buildHandlerChain() {
 	secretLister := s.InformerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets().Lister()
 	handler = filters.WithAuthorization(handler, authorizers)
 
-	saAuthenticator, err := NewDelegatingAuthenticator(s.KubernetesClient.Kubernetes().AuthenticationV1().TokenReviews())
+	saAuthenticator, err := NewDelegatingAuthenticator(s.KubernetesClient.Kubernetes().AuthenticationV1())
 	if err != nil {
 		panic(err)
 	}

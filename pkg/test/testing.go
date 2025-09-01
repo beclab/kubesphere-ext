@@ -28,7 +28,6 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/prometheus/common/log"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -233,12 +232,12 @@ func (ctx *TestCtx) Cleanup(option *CleanupOptions) {
 			if ctx.t != nil {
 				ctx.t.Errorf("A cleanup function failed with error: (%v)\n", err)
 			} else {
-				log.Errorf("A cleanup function failed with error: (%v)", err)
+				klog.Errorf("A cleanup function failed with error: (%v)", err)
 			}
 		}
 	}
 	if ctx.t == nil && failed {
-		log.Fatal("A cleanup function failed")
+		klog.Fatal("A cleanup function failed")
 	}
 }
 
