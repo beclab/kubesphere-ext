@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"time"
 
+	"k8s.io/apiserver/pkg/apis/apiserver"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/server/options"
@@ -32,7 +33,7 @@ type DelegatingAuthenticator struct {
 }
 
 // NewDelegatingAuthenticator creates an authenticator compatible with the kubelet's needs
-func NewDelegatingAuthenticator(client authenticationclient.TokenReviewInterface) (*DelegatingAuthenticator, error) {
+func NewDelegatingAuthenticator(client authenticationclient.AuthenticationV1Interface) (*DelegatingAuthenticator, error) {
 	if client == nil {
 		return nil, errors.New("tokenAccessReview client not provided, cannot use webhook authentication")
 	}
@@ -42,7 +43,7 @@ func NewDelegatingAuthenticator(client authenticationclient.TokenReviewInterface
 	)
 
 	authenticatorConfig := authenticatorfactory.DelegatingAuthenticatorConfig{
-		Anonymous:               false, // always require authentication
+		Anonymous:               &apiserver.AnonymousAuthConfig{},
 		CacheTTL:                2 * time.Minute,
 		TokenAccessReviewClient: client,
 		APIAudiences:            authenticator.Audiences(nil),
