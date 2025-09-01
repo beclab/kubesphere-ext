@@ -56,7 +56,6 @@ binary: | ks-apiserver ; $(info $(M)...Build all of binary.) @ ## Build all of b
 
 # Build ks-apiserver binary
 ks-apiserver: ; $(info $(M)...Begin to build ks-apiserver binary.)  @ ## Build ks-apiserver.
-	go mod tidy
 	 hack/gobuild.sh cmd/ks-apiserver;
 
 # Run all verify scripts hack/verify-*.sh
