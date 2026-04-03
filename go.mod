@@ -4,7 +4,7 @@
 
 module kubesphere.io/kubesphere
 
-go 1.24
+go 1.24.0
 
 require (
 	code.cloudfoundry.org/bytefmt v0.0.0-20190710193110-1eb035ffe2b6
