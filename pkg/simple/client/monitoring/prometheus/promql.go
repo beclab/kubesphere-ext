@@ -114,6 +114,10 @@ var promQLTemplates = map[string]string{
 	"node_pod_abnormal_ratio":     `node:pod_abnormal:ratio{$1}`,
 	"node_pleg_quantile":          `node_quantile:kubelet_pleg_relist_duration_seconds:histogram_quantile{$1}`,
 
+	"node_rapl_package_joules_power":`sum by (node) (rate(node:node_rapl_package_joules_total{job="node-exporter"}[5m]) * on(namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:{})`,
+	"node_rapl_core_joules_power":`sum by (node) (rate(node:node_rapl_core_joules_power{job="node-exporter"}[5m]) * on(namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:{})`,
+	"node_disk_lsblk_info": `node:node_disk_lsblk_info{$1}`,
+
 	"node_disk_smartctl_info":           `node:node_disk_smartctl_info{$1}`,
 	"node_disk_temp_celsius":            `node:node_disk_temp_celsius{$1}`,
 	"node_cpu_temp_celsius":             `node:node_cpu_temp_celsius{$1}`,

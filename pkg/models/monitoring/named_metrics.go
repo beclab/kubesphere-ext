@@ -149,6 +149,10 @@ var NodeMetrics = []string{
 	"node_device_partition_size_total",
 	"node_filesystem_size_bytes",
 
+	"node_rapl_package_joules_power",
+	"node_rapl_core_joules_power",
+	"node_disk_lsblk_info",
+
 	// meter
 	"meter_node_cpu_usage",
 	"meter_node_memory_usage_wo_cache",
