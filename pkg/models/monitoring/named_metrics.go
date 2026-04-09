@@ -153,6 +153,10 @@ var NodeMetrics = []string{
 	"node_rapl_core_joules_power",
 	"node_disk_lsblk_info",
 
+	"node_rapl_constraint_0_power_limit_uw",
+	"node_rapl_constraint_0_max_power_uw",
+	"node_rapl_constraint_1_power_limit_uw",
+
 	// meter
 	"meter_node_cpu_usage",
 	"meter_node_memory_usage_wo_cache",
