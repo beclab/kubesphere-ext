@@ -118,6 +118,11 @@ var promQLTemplates = map[string]string{
 	"node_rapl_core_joules_power":`sum by (node) (rate(node:node_rapl_core_joules_power{job="node-exporter"}[5m]) * on(namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:{})`,
 	"node_disk_lsblk_info": `node:node_disk_lsblk_info{$1}`,
 
+	"node_rapl_constraint_0_power_limit_uw": `node_rapl_constraint_0_power_limit_uw{$1}`,
+	"node_rapl_constraint_0_max_power_uw": `node_rapl_constraint_0_max_power_uw{$1}`,
+	"node_rapl_constraint_1_power_limit_uw": `node_rapl_constraint_1_power_limit_uw{$1}`,
+
+
 	"node_disk_smartctl_info":           `node:node_disk_smartctl_info{$1}`,
 	"node_disk_temp_celsius":            `node:node_disk_temp_celsius{$1}`,
 	"node_cpu_temp_celsius":             `node:node_cpu_temp_celsius{$1}`,
