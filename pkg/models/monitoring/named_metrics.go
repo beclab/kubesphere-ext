@@ -81,6 +81,21 @@ var ClusterMetrics = []string{
 	"cluster_pod_abnormal_ratio",
 	"cluster_node_offline_ratio",
 
+	// intel gpu (xpumd)
+	"cluster_intel_hw_energy_joules_total",
+	"cluster_intel_hw_frequency_hertz",
+	"cluster_intel_hw_frequency_limit_hertz",
+	"cluster_intel_hw_frequency_request_hertz",
+	"cluster_intel_hw_frequency_samples",
+	"cluster_intel_hw_frequency_throttle_status",
+	"cluster_intel_hw_gpu_info",
+	"cluster_intel_hw_gpu_utilization_ratio",
+	"cluster_intel_hw_memory_size_bytes",
+	"cluster_intel_hw_memory_usage_bytes",
+	"cluster_intel_hw_memory_utilization_ratio",
+	"cluster_intel_hw_power_watts",
+	"cluster_intel_hw_status",
+
 	// meter
 	"meter_cluster_cpu_usage",
 	"meter_cluster_memory_usage",
@@ -160,6 +175,21 @@ var NodeMetrics = []string{
 	"node_rapl_constraint_0_power_limit_uw",
 	"node_rapl_constraint_0_max_power_uw",
 	"node_rapl_constraint_1_power_limit_uw",
+
+	// intel gpu (xpumd)
+	"node_intel_hw_energy_joules_total",
+	"node_intel_hw_frequency_hertz",
+	"node_intel_hw_frequency_limit_hertz",
+	"node_intel_hw_frequency_request_hertz",
+	"node_intel_hw_frequency_samples",
+	"node_intel_hw_frequency_throttle_status",
+	"node_intel_hw_gpu_info",
+	"node_intel_hw_gpu_utilization_ratio",
+	"node_intel_hw_memory_size_bytes",
+	"node_intel_hw_memory_usage_bytes",
+	"node_intel_hw_memory_utilization_ratio",
+	"node_intel_hw_power_watts",
+	"node_intel_hw_status",
 
 	// meter
 	"meter_node_cpu_usage",
