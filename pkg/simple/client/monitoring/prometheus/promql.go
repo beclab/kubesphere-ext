@@ -82,6 +82,21 @@ var promQLTemplates = map[string]string{
 	"cluster_pod_abnormal_ratio":         `cluster:pod_abnormal:ratio`,
 	"cluster_node_offline_ratio":         `cluster:node_offline:ratio`,
 
+	// intel gpu (xpumd)
+	"cluster_intel_hw_energy_joules_total":       `hw_energy_joules_total`,
+	"cluster_intel_hw_frequency_hertz":           `hw_frequency_hertz`,
+	"cluster_intel_hw_frequency_limit_hertz":     `hw_frequency_limit_hertz`,
+	"cluster_intel_hw_frequency_request_hertz":   `hw_frequency_request_hertz`,
+	"cluster_intel_hw_frequency_samples":         `hw_frequency_samples`,
+	"cluster_intel_hw_frequency_throttle_status": `hw_frequency_throttle_status`,
+	"cluster_intel_hw_gpu_info":                  `hw_gpu_info`,
+	"cluster_intel_hw_gpu_utilization_ratio":     `hw_gpu_utilization_ratio`,
+	"cluster_intel_hw_memory_size_bytes":         `hw_memory_size_bytes`,
+	"cluster_intel_hw_memory_usage_bytes":        `hw_memory_usage_bytes`,
+	"cluster_intel_hw_memory_utilization_ratio":  `hw_memory_utilization_ratio`,
+	"cluster_intel_hw_power_watts":               `hw_power_watts`,
+	"cluster_intel_hw_status":                    `hw_status`,
+
 	//node
 	"node_cpu_utilisation":       "node:node_cpu_utilisation:avg1m{$1}",
 	"node_cpu_total":             "node:node_num_cpu:sum{$1}",
@@ -155,6 +170,21 @@ var promQLTemplates = map[string]string{
 	"node_device_size_utilisation":     `1 - sum by(device, node, role) (label_replace(node_filesystem_avail_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, role) node_namespace_pod:kube_pod_info:{$1}, "base_device", "${1}", "device", "/dev/(nvme\\d+n\\d+|mmcblk\\d+|[a-z]+)p?\\d*") unless on (instance, base_device) label_replace(node_disk_info{external="1"}, "base_device", "${1}", "device", "(.*)")) / sum by(device, node, role) (label_replace(node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"} * on(namespace, pod) group_left(node, role) node_namespace_pod:kube_pod_info:{$1}, "base_device", "${1}", "device", "/dev/(nvme\\d+n\\d+|mmcblk\\d+|[a-z]+)p?\\d*") unless on (instance, base_device) label_replace(node_disk_info{external="1"}, "base_device", "${1}", "device", "(.*)"))`,
 	"node_device_partition_size_total": `min by (device, instance, node, role) ((label_replace(node_filesystem_size_bytes{device!~"/dev/loop\\d+", device=~"/dev/.*", job="node-exporter"} * on(namespace, pod) group_left(node, role) node_namespace_pod:kube_pod_info:, "base_device", "${1}", "device", "/dev/(nvme\\d+n\\d+|mmcblk\\d+|[a-z]+)p?\\d*") unless on (instance, base_device) label_replace(node_disk_info{external="1"}, "base_device", "${1}", "device", "(.*)")) * on(device, instance, mountpoint) group_left()(label_replace(node_filesystem_size_bytes{device!~"/dev/loop\\d+", device=~"/dev/.*", job="node-exporter"},"len", "{{len(mountpoint)}}", "", "") / clamp_min(label_replace(node_filesystem_size_bytes{device!~"/dev/loop\\d+", device=~"/dev/.*", job="node-exporter"},"len", "{{len(mountpoint)}}", "", ""), 1)))`,
 	"node_filesystem_size_bytes":       `label_replace(label_replace(node_filesystem_size_bytes{device!~"/dev/loop\\d+",device=~"/dev/.*",job="node-exporter"}, "base_device", "${1}", "device", "/dev/(nvme\\d+n\\d+|mmcblk\\d+|[a-z]+)p?\\d*") unless on (instance, base_device) label_replace(node_disk_info{external="1"}, "base_device", "${1}", "device", "(.*)"), "base_device", "", "base_device", "(.*)")`,
+
+	// intel gpu (xpumd)
+	"node_intel_hw_energy_joules_total":       `hw_energy_joules_total{$1}`,
+	"node_intel_hw_frequency_hertz":           `hw_frequency_hertz{$1}`,
+	"node_intel_hw_frequency_limit_hertz":     `hw_frequency_limit_hertz{$1}`,
+	"node_intel_hw_frequency_request_hertz":   `hw_frequency_request_hertz{$1}`,
+	"node_intel_hw_frequency_samples":         `hw_frequency_samples{$1}`,
+	"node_intel_hw_frequency_throttle_status": `hw_frequency_throttle_status{$1}`,
+	"node_intel_hw_gpu_info":                  `hw_gpu_info{$1}`,
+	"node_intel_hw_gpu_utilization_ratio":     `hw_gpu_utilization_ratio{$1}`,
+	"node_intel_hw_memory_size_bytes":         `hw_memory_size_bytes{$1}`,
+	"node_intel_hw_memory_usage_bytes":        `hw_memory_usage_bytes{$1}`,
+	"node_intel_hw_memory_utilization_ratio":  `hw_memory_utilization_ratio{$1}`,
+	"node_intel_hw_power_watts":               `hw_power_watts{$1}`,
+	"node_intel_hw_status":                    `hw_status{$1}`,
 
 	// workspace
 	"workspace_cpu_usage":                  `round(sum by (workspace) (namespace:container_cpu_usage_seconds_total:sum_rate{namespace!="", $1}), 0.001)`,
